@@ -555,7 +555,7 @@ GameObject:
   - component: {fileID: 1852324014}
   - component: {fileID: 1852324013}
   - component: {fileID: 1852324016}
-  - component: {fileID: 1852324015}
+  - component: {fileID: 1852324017}
   m_Layer: 0
   m_Name: WaterManager
   m_TagString: Untagged
@@ -575,9 +575,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2ecb9707cf0521488643d86044d972f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  width: 16
-  height: 32
-  depth: 16
+  worldWidth: 128
+  worldHeight: 32
+  worldDepth: 128
+  waterMaterial: {fileID: 2100000, guid: bb394fd5cedd9804fbfb453d11d25dc1, type: 2}
+  simulationDelay: 0.1
+  flowSpeed: 0.5
+  isFlooding: 1
+  targetFloodLevel: 0
+  floodRiseRate: 0.1
 --- !u!4 &1852324014
 Transform:
   m_ObjectHideFlags: 0
@@ -593,55 +599,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!23 &1852324015
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1852324012}
-  m_Enabled: 1
-  m_CastShadows: 0
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 0
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 0
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 33ee4da3902f7d941847b72c9ae4b23d, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!33 &1852324016
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -650,6 +607,26 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1852324012}
   m_Mesh: {fileID: 0}
+--- !u!114 &1852324017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1852324012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e2e8e25d04b9024aa4f7f18fa73aed3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  seed: 12345
+  generateOnStart: 1
+  groundBaseHeight: 5
+  riverWidth: 6
+  riverMeanderScale: 20
+  riverMeanderAmplitude: 15
+  buildingDensity: 0.3
+  maxBuildingHeight: 20
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

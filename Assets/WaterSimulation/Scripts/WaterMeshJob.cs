@@ -7,148 +7,187 @@ using UnityEngine;
 [BurstCompile]
 public struct WaterChunkMeshJob : IJob
 {
+    // --- INPUT DATA ---
     [ReadOnly] public NativeArray<VoxelCell> grid;
     public int3 totalGridSize;
-    
     public int3 chunkStartPos;
     public int chunkSize;
 
+    // --- OUTPUT DATA ---
     public NativeList<Vector3> vertices;
     public NativeList<int> triangles;
+    public NativeList<Vector2> uvs;
+
+    // Konstanta Texture Atlas (Misal 4x4 grid)
+    private const float uvStep = 0.25f; // 1.0 dibagi 4
+    private const int atlasCols = 4;
+    private const float uvEps = 0.001f; // Margin agar tidak bocor warna
 
     public void Execute()
     {
+        // Loop 3D Voxel
         for (int x = 0; x < chunkSize; x++)
-        for (int y = 0; y < chunkSize; y++)
-        for (int z = 0; z < chunkSize; z++)
-        {
-            int globalX = chunkStartPos.x + x;
-            int globalY = chunkStartPos.y + y;
-            int globalZ = chunkStartPos.z + z;
+            for (int y = 0; y < chunkSize; y++)
+                for (int z = 0; z < chunkSize; z++)
+                {
+                    // 1. Koordinat Global
+                    int gx = chunkStartPos.x + x;
+                    int gy = chunkStartPos.y + y;
+                    int gz = chunkStartPos.z + z;
 
-            if (globalX >= totalGridSize.x || globalY >= totalGridSize.y || globalZ >= totalGridSize.z) 
-                continue;
+                    // Safety Check
+                    if (gx >= totalGridSize.x || gy >= totalGridSize.y || gz >= totalGridSize.z) continue;
 
-            int index = GetIndex(globalX, globalY, globalZ);
-            VoxelCell cell = grid[index];
+                    // 2. Ambil Data Voxel Ini
+                    int index = GetIndex(gx, gy, gz);
+                    VoxelCell cell = grid[index];
 
-            // Skip jika voxel ini kosong
-            if (cell.amount < 0.01f) continue;
+                    // Skip jika kosong
+                    if (cell.amount < 0.01f && !cell.isSolid) continue;
 
-            float3 pos = new float3(x, y, z);
-            float h = cell.amount;
+                    float3 localPos = new float3(x, y, z);
+                    float height = cell.isSolid ? 1.0f : cell.amount; // Solid selalu penuh
+                    int type = cell.blockType;
 
-            // --- LOGICA FACE CULLING ---
-            // Hanya gambar sisi jika tetangga di arah tersebut KOSONG atau LEBIH RENDAH
-            
-            // Cek Atas
-            if (ShouldDrawFace(globalX, globalY + 1, globalZ, h)) 
-            {
-                // Top Face logic
-                float3 t0 = new float3(pos.x, pos.y + h, pos.z);
-                float3 t1 = new float3(pos.x + 1, pos.y + h, pos.z);
-                float3 t2 = new float3(pos.x, pos.y + h, pos.z + 1);
-                float3 t3 = new float3(pos.x + 1, pos.y + h, pos.z + 1);
-                AddQuad(t0, t2, t3, t1);
-            }
+                    // 3. CEK 6 SISI (Face Culling)
+                    // Kita hanya menggambar sisi jika tetangga di arah itu transparan/lebih rendah
 
-            // Cek Bawah
-            if (ShouldDrawFace(globalX, globalY - 1, globalZ, 1.0f)) // Bawah selalu bandingkan full
-            {
-                float3 b0 = new float3(pos.x, pos.y, pos.z);
-                float3 b1 = new float3(pos.x + 1, pos.y, pos.z);
-                float3 b2 = new float3(pos.x, pos.y, pos.z + 1);
-                float3 b3 = new float3(pos.x + 1, pos.y, pos.z + 1);
-                AddQuad(b2, b0, b1, b3);
-            }
+                    // ATAS (Y+1)
+                    if (ShouldDrawFace(gx, gy + 1, gz, height))
+                        AddFace(localPos, height, type, 0); // 0 = Atas
 
-            // Cek Kiri (X-1)
-            if (ShouldDrawFace(globalX - 1, globalY, globalZ, h))
-            {
-                // West Face
-                AddQuadSide(pos, h, 0); 
-            }
-            
-            // Cek Kanan (X+1)
-            if (ShouldDrawFace(globalX + 1, globalY, globalZ, h))
-            {
-                // East Face
-                AddQuadSide(pos, h, 1);
-            }
+                    // BAWAH (Y-1)
+                    if (ShouldDrawFace(gx, gy - 1, gz, 1.0f)) // Bawah selalu cek full block
+                        AddFace(localPos, height, type, 1); // 1 = Bawah
 
-            // Cek Belakang (Z-1)
-            if (ShouldDrawFace(globalX, globalY, globalZ - 1, h))
-            {
-                // South Face
-                AddQuadSide(pos, h, 2);
-            }
+                    // KIRI (X-1)
+                    if (ShouldDrawFace(gx - 1, gy, gz, height))
+                        AddFace(localPos, height, type, 2); // 2 = Kiri (West)
 
-            // Cek Depan (Z+1)
-            if (ShouldDrawFace(globalX, globalY, globalZ + 1, h))
-            {
-                // North Face
-                AddQuadSide(pos, h, 3);
-            }
-        }
+                    // KANAN (X+1)
+                    if (ShouldDrawFace(gx + 1, gy, gz, height))
+                        AddFace(localPos, height, type, 3); // 3 = Kanan (East)
+
+                    // BELAKANG (Z-1)
+                    if (ShouldDrawFace(gx, gy, gz - 1, height))
+                        AddFace(localPos, height, type, 4); // 4 = Belakang (South)
+
+                    // DEPAN (Z+1)
+                    if (ShouldDrawFace(gx, gy, gz + 1, height))
+                        AddFace(localPos, height, type, 5); // 5 = Depan (North)
+                }
     }
 
-    // Helper untuk mengecek apakah kita perlu menggambar wajah
+    // --- FUNGSI 1: LOGIKA FACE CULLING ---
+    // Mengembalikan TRUE jika wajah harus digambar (karena terekspos)
     bool ShouldDrawFace(int gx, int gy, int gz, float myHeight)
     {
-        // 1. Jika tetangga di luar map, gambar sisi ini (batas dunia)
-        if (gx < 0 || gx >= totalGridSize.x || 
-            gy < 0 || gy >= totalGridSize.y || 
+        // A. Jika tetangga di luar peta -> Gambar (Batas dunia)
+        if (gx < 0 || gx >= totalGridSize.x ||
+            gy < 0 || gy >= totalGridSize.y ||
             gz < 0 || gz >= totalGridSize.z)
             return true;
 
-        // 2. Ambil data tetangga
+        // B. Ambil tetangga
         int idx = GetIndex(gx, gy, gz);
         VoxelCell neighbor = grid[idx];
 
-        // 3. Jika tetangga solid (tembok), jangan gambar (hemat GPU)
+        // C. Jika tetangga Solid (Tembok/Tanah) -> Jangan Gambar (Ketutup tembok)
         if (neighbor.isSolid) return false;
 
-        // 4. Jika tetangga airnya lebih tinggi atau sama penuhnya, jangan gambar
-        // (Kecuali saya penuh 1.0, tetangga 0.5, saya tetap perlu gambar dinding saya yang terekspos)
-        // Aturan simpel: Gambar jika tetangga kurang dari penuh
-        if (neighbor.amount >= 0.99f) return false;
-        
-        // Optimasi tambahan: Jika tinggi saya sama persis dengan tetangga, bisa di-skip
-        // tapi untuk amannya return true jika tetangga tidak penuh.
-        return true;
+        // D. Jika tetangga Air
+        // Gambar hanya jika air tetangga lebih rendah dari saya
+        // (Atau tetangga kosong/amount=0)
+        return neighbor.amount < myHeight;
     }
 
+    // --- FUNGSI 2: GEOMETRI & UV GENERATOR ---
+    // Menambahkan 4 titik (Quad) dan UV map untuk satu sisi spesifik
+    // --- FUNGSI 2: GEOMETRI & UV GENERATOR ---
+    void AddFace(float3 p, float h, int type, int faceDir)
+    {
+        int vStart = vertices.Length;
+
+        // --- DEFINISI TITIK SUDUT (Tetap Sama) ---
+        // b = Bottom, t = Top
+        // 0 = Kiri Bawah/Belakang (0,0)
+        // 1 = Kanan Bawah/Belakang (1,0)
+        // 2 = Kiri Atas/Depan (0,1)
+        // 3 = Kanan Atas/Depan (1,1) (Relatif XZ plane)
+
+        float3 b0 = new float3(p.x, p.y, p.z);         // 0,0,0
+        float3 b1 = new float3(p.x + 1, p.y, p.z);     // 1,0,0
+        float3 b2 = new float3(p.x, p.y, p.z + 1);     // 0,0,1
+        float3 b3 = new float3(p.x + 1, p.y, p.z + 1); // 1,0,1
+
+        float3 t0 = new float3(p.x, p.y + h, p.z);     // 0,h,0
+        float3 t1 = new float3(p.x + 1, p.y + h, p.z); // 1,h,0
+        float3 t2 = new float3(p.x, p.y + h, p.z + 1); // 0,h,1
+        float3 t3 = new float3(p.x + 1, p.y + h, p.z + 1); // 1,h,1
+
+        // --- PERBAIKAN URUTAN TITIK (WINDING ORDER) ---
+        // Urutan harus: Bawah-Kiri -> Atas-Kiri -> Atas-Kanan -> Bawah-Kanan
+        // Dilihat DARI LUAR kubus menghadap ke wajah tersebut.
+
+        switch (faceDir)
+        {
+            case 0: // Top (Y+1) - OK
+                // Melihat dari atas ke bawah
+                vertices.Add(t0); vertices.Add(t2); vertices.Add(t3); vertices.Add(t1);
+                break;
+
+            case 1: // Bottom (Y-1) - OK
+                // Melihat dari bawah ke atas
+                vertices.Add(b2); vertices.Add(b0); vertices.Add(b1); vertices.Add(b3);
+                break;
+
+            case 2: // Left / West (X-1) - DIPERBAIKI
+                // Melihat dari kiri ke kanan (Lihat ke arah X positif)
+                // Urutan: Belakang-Bawah (b2) -> Belakang-Atas (t2) -> Depan-Atas (t0) -> Depan-Bawah (b0)
+                vertices.Add(b2); vertices.Add(t2); vertices.Add(t0); vertices.Add(b0);
+                break;
+
+            case 3: // Right / East (X+1) - DIPERBAIKI
+                // Melihat dari kanan ke kiri (Lihat ke arah X negatif)
+                vertices.Add(b1); vertices.Add(t1); vertices.Add(t3); vertices.Add(b3);
+                break;
+
+            case 4: // Back / South (Z-1) - DIPERBAIKI
+                // Melihat dari belakang ke depan (Lihat ke arah Z positif)
+                vertices.Add(b0); vertices.Add(t0); vertices.Add(t1); vertices.Add(b1);
+                break;
+
+            case 5: // Front / North (Z+1) - DIPERBAIKI
+                // Melihat dari depan ke belakang (Lihat ke arah Z negatif)
+                vertices.Add(b3); vertices.Add(t3); vertices.Add(t2); vertices.Add(b2);
+                break;
+        }
+
+        // --- TRIANGLES (Tetap Sama) ---
+        // 0-1-2 dan 0-2-3 membentuk kotak dari 4 titik yang sudah diurutkan di atas
+        triangles.Add(vStart + 0);
+        triangles.Add(vStart + 1);
+        triangles.Add(vStart + 2);
+
+        triangles.Add(vStart + 0);
+        triangles.Add(vStart + 2);
+        triangles.Add(vStart + 3);
+
+        // --- UV MAPPING (Tetap Sama) ---
+        float uvX = (type % atlasCols) * uvStep;
+        float uvY = (type / atlasCols) * uvStep;
+
+        Vector2 u0 = new Vector2(uvX + uvEps, uvY + uvEps);
+        Vector2 u1 = new Vector2(uvX + uvEps, uvY + uvStep - uvEps);
+        Vector2 u2 = new Vector2(uvX + uvStep - uvEps, uvY + uvStep - uvEps);
+        Vector2 u3 = new Vector2(uvX + uvStep - uvEps, uvY + uvEps);
+
+        uvs.Add(u0); uvs.Add(u1); uvs.Add(u2); uvs.Add(u3);
+    }
+
+    // Helper hitung index 1D
     int GetIndex(int x, int y, int z)
     {
         return x + totalGridSize.x * (y + totalGridSize.y * z);
-    }
-
-    // Helper simplifikasi Quad Samping
-    void AddQuadSide(float3 p, float h, int side)
-    {
-        // Titik dasar
-        float3 b0 = new float3(p.x, p.y, p.z);
-        float3 b1 = new float3(p.x + 1, p.y, p.z);
-        float3 b2 = new float3(p.x, p.y, p.z + 1);
-        float3 b3 = new float3(p.x + 1, p.y, p.z + 1);
-
-        // Titik atas
-        float3 t0 = new float3(p.x, p.y + h, p.z);
-        float3 t1 = new float3(p.x + 1, p.y + h, p.z);
-        float3 t2 = new float3(p.x, p.y + h, p.z + 1);
-        float3 t3 = new float3(p.x + 1, p.y + h, p.z + 1);
-
-        if (side == 2) AddQuad(b0, t0, t1, b1); // South
-        else if (side == 3) AddQuad(b3, t3, t2, b2); // North
-        else if (side == 1) AddQuad(b1, t1, t3, b3); // East
-        else if (side == 0) AddQuad(b2, t2, t0, b0); // West
-    }
-
-    void AddQuad(float3 v0, float3 v1, float3 v2, float3 v3)
-    {
-        int index = vertices.Length;
-        vertices.Add(v0); vertices.Add(v1); vertices.Add(v2); vertices.Add(v3);
-        triangles.Add(index + 0); triangles.Add(index + 1); triangles.Add(index + 2);
-        triangles.Add(index + 0); triangles.Add(index + 2); triangles.Add(index + 3);
     }
 }

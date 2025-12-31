@@ -1,8 +1,9 @@
-using Unity.Mathematics;
-
 [System.Serializable]
 public struct VoxelCell
 {
-    public float amount; // 0.0 (Kering) s/d 1.0 (Penuh)
-    public bool isSolid; // True = Tanah/Batu, False = Udara/Air
+    public float amount; // 0.0 - 1.0 (Air)
+    public bool isSolid; // True = Tanah/Gedung
+    
+    // 0 = Udara, 1 = Tanah/Rumput, 2 = Beton/Gedung, 3 = Batu/Industri
+    public byte blockType; 
 }
