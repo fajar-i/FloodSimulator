@@ -1,12 +1,11 @@
 using UnityEngine;
 using Unity.Collections;
 
-[RequireComponent(typeof(ChunkedWaterManager))]
 public class CityTerrainGenerator : MonoBehaviour
 {
     [Header("General Settings")]
     public int seed = 12345;
-    public bool generateOnStart = true;
+    public bool generateOnStart = false;
     public int groundBaseHeight = 5; // Tinggi dasar tanah
 
     [Header("River Settings")]
@@ -18,55 +17,20 @@ public class CityTerrainGenerator : MonoBehaviour
     [Range(0, 1)] public float buildingDensity = 0.3f;
     public int maxBuildingHeight = 20;
 
-    private ChunkedWaterManager waterManager;
-
-    void Start()
+    public void GenerateCity(VoxelWorld voxelWorld)
     {
-        if (generateOnStart)
-        {
-            GenerateCity();
-        }
-    }
-
-    public void GenerateCity()
-    {
-        waterManager = GetComponent<ChunkedWaterManager>();
-        // Pastikan Grid sudah dibuat oleh Manager
-        if (!waterManager.gridA.IsCreated)
-        {
-            Debug.LogError("Grid belum dibuat! Pastikan ChunkedWaterManager menggunakan Awake(), bukan Start().");
-            return;
-        }
-        // Inisialisasi Random berdasarkan Seed
         Random.InitState(seed);
-
         // Kita butuh akses langsung ke Grid dari Manager
-        // PERINGATAN: Kita mengakses internal array manager. 
-        // Pastikan script ini berjalan sebelum simulasi dimulai atau pause simulasi dulu.
-        GenerateTerrainData();
-
-        // Paksa Manager untuk refresh semua chunk
-        // (Kita perlu sedikit trik reflection atau buat method public di manager)
-        // Untuk sekarang, kita asumsikan Manager akan merender ulang di update pertamanya.
+        GenerateTerrainData(voxelWorld);
     }
 
-    void GenerateTerrainData()
+    void GenerateTerrainData(VoxelWorld voxelWorld)
     {
-        int width = waterManager.worldWidth;
-        int height = waterManager.worldHeight;
-        int depth = waterManager.worldDepth;
+        int width = voxelWorld.worldWidth;
+        int height = voxelWorld.worldHeight;
+        int depth = voxelWorld.worldDepth;
 
-        // Kita akan mengisi buffer gridA (buffer utama saat start)
-        // Cara akses ini agak 'hacky' karena variable gridA private.
-        // SOLUSI TERBAIK: Tambahkan method 'SetVoxel(x,y,z, cell)' di ChunkedWaterManager.
-        // TAPI UNTUK KEMUDAHAN: Kita akan generate array baru lalu copy, atau 
-        // Anda ubah 'gridA' di ChunkedWaterManager menjadi 'public'.
-
-        // --- ASUMSI: Anda sudah mengubah gridA menjadi PUBLIC di ChunkedWaterManager ---
-        // Jika belum, silakan ubah: 'public NativeArray<VoxelCell> gridA;' di script manager.
-
-        NativeArray<VoxelCell> grid = waterManager.gridA;
-
+        // Kita akan mengisi buffer grid
         // Offset untuk Perlin Noise agar seed berpengaruh
         float noiseOffsetX = Random.Range(0f, 9999f);
         float noiseOffsetZ = Random.Range(0f, 9999f);
@@ -129,7 +93,7 @@ public class CityTerrainGenerator : MonoBehaviour
                 // 5. ISI VOXEL VERTIKAL (Loop Y)
                 for (int y = 0; y < height; y++)
                 {
-                    int index = x + width * (y + height * z);
+                    
                     VoxelCell cell = new VoxelCell();
 
                     // Logic Pengisian
@@ -160,7 +124,7 @@ public class CityTerrainGenerator : MonoBehaviour
                         cell.amount = 0;
                     }
 
-                    grid[index] = cell;
+                    voxelWorld.SetVoxel(x, y, z, cell);
                 }
             }
         }

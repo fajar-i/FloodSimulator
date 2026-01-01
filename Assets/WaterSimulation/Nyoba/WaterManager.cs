@@ -5,7 +5,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
 
-public class ChunkedWaterManager : MonoBehaviour
+public class WaterManager : MonoBehaviour
 {
     [Header("World Settings")]
     public int worldWidth = 32;
