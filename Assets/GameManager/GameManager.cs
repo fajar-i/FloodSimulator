@@ -13,7 +13,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Modules")]
     public VoxelWorld world;
-    public CityTerrainGenerator terrainGen;
+    public TerrainGenerator terrainGen;
     public WaterSimulationSystem waterSystem; // Logic
     // public ZoneController zoneController;
     // public ChunkedWaterManager disasterController;
@@ -38,7 +38,7 @@ public class GameManager : MonoBehaviour
         {
             case GameState.Initialization:
                 // Generate Terrain Awal
-                terrainGen.GenerateCity(world);
+                terrainGen.GenerateTerrain(world);
 
                 // Setelah selesai generate, langsung masuk ke fase Planning (walau masih kosong)
                 ChangeState(GameState.Planning);
@@ -93,7 +93,7 @@ public class GameManager : MonoBehaviour
     void Update()
     {
         // Logic global, misal tombol "Next Phase"
-        if (Keyboard.current.enterKey.isPressed)
+        if (Keyboard.current.enterKey.wasPressedThisFrame)
         {
             NextPhase();
         }

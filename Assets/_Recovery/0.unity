@@ -511,12 +511,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityTerrainGenerator
   seed: 12345
+  generateOnStart: 0
   groundBaseHeight: 5
   riverWidth: 6
-  riverMeanderScale: 30
-  riverMeanderAmplitude: 30
-  terrainScale: 0.05
-  terrainHeightMultiplier: 15
+  riverMeanderScale: 20
+  riverMeanderAmplitude: 15
+  buildingDensity: 0.3
+  maxBuildingHeight: 20
 --- !u!4 &1085188278
 Transform:
   m_ObjectHideFlags: 0
@@ -673,9 +674,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bf1223d2e55732459f3374d0976b5d7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VoxelWorld
-  worldWidth: 100
+  worldWidth: 32
   worldHeight: 32
-  worldDepth: 100
+  worldDepth: 32
   waterMaterial: {fileID: 2100000, guid: bb394fd5cedd9804fbfb453d11d25dc1, type: 2}
 --- !u!4 &1636642547
 Transform:
