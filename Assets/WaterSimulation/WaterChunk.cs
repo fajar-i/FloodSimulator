@@ -9,11 +9,10 @@ public class WaterChunk
     
     // Koordinat Chunk dalam dunia (misal: 0,0,0 atau 1,0,0)
     public Vector3Int chunkCoord; 
-    
+    public MeshCollider meshCollider;
     public WaterChunk(Vector3Int coord, Material mat, Transform parent)
     {
         chunkCoord = coord;
-        
         // Buat GameObject baru
         gameObject = new GameObject($"Chunk_{coord.x}_{coord.y}_{coord.z}");
         gameObject.transform.parent = parent;
@@ -28,5 +27,6 @@ public class WaterChunk
         
         meshRenderer = gameObject.AddComponent<MeshRenderer>();
         meshRenderer.material = mat;
+        meshCollider = gameObject.AddComponent<MeshCollider>();
     }
 }

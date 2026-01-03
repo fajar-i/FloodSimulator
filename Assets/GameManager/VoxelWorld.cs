@@ -108,6 +108,9 @@ public class VoxelWorld : MonoBehaviour
 
         chunk.mesh.RecalculateNormals();
         chunk.mesh.RecalculateBounds();
+
+        chunk.meshCollider.sharedMesh = null; // Reset dulu agar refresh
+        chunk.meshCollider.sharedMesh = chunk.mesh;
     }
 
     bool IsValidIndex(int x, int y, int z)
@@ -135,19 +138,36 @@ public class VoxelWorld : MonoBehaviour
         if (!IsValidIndex(x, y, z)) return;
 
         int idx = GetIndex(x, y, z);
-        // Update kedua grid agar sinkron saat tidak simulasi
+
+        // Cek apakah data benar-benar berubah? (Optimasi)
+        // Kalau datanya sama persis, jangan render ulang (Hemat CPU)
+        VoxelCell oldData = ActiveGrid[idx];
+        if (oldData.blockType == data.blockType && oldData.amount == data.amount && oldData.isSolid == data.isSolid)
+            return;
+
         ActiveGrid[idx] = data;
         NextGrid[idx] = data;
 
-        // TODO : Tandai chunk kotor agar dirender ulang
+        // OTOMATIS MARK DIRTY DI SINI
         MarkChunkDirty(x, y, z);
     }
 
-    void MarkChunkDirty(int x, int y, int z)
+    public void MarkChunkDirty(int x, int y, int z)
     {
-        // Saat ini kita merender ulang semua chunk setiap tick,
-        // jadi fungsi ini belum wajib ada isinya.
-        // Nanti bisa dipakai untuk: isChunkDirty[chunkIndex] = true;
+        // Cek batas dunia dulu agar tidak error
+        if (!IsValidIndex(x, y, z)) return;
+
+        // Gunakan variabel lokal (cx, cy, cz) BUKAN global (chunksX)
+        int cx = x / CHUNK_SIZE;
+        int cy = y / CHUNK_SIZE;
+        int cz = z / CHUNK_SIZE;
+
+        UpdateSingleChunk(cx, cy, cz, ActiveGrid);
+
+        // OPTIMASI TAMBAHAN:
+        // Jika kita mengubah blok di perbatasan chunk (misal x=15),
+        // chunk sebelah (x=16) juga perlu update karena Face Culling tetangga berubah.
+        // Tapi untuk sekarang, kode di atas sudah cukup agar tekstur berubah.
     }
 
     public void SwapBuffer()

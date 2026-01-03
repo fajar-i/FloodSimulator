@@ -14,8 +14,8 @@ public class GameManager : MonoBehaviour
     [Header("Modules")]
     public VoxelWorld world;
     public TerrainGenerator terrainGen;
+    public ZoneController zoneController;
     public WaterSimulationSystem waterSystem; // Logic
-    // public ZoneController zoneController;
     // public ChunkedWaterManager disasterController;
     // public EconomyManager economyManager;
 
@@ -100,6 +100,10 @@ public class GameManager : MonoBehaviour
         if (CurrentState == GameState.Simulation)
         {
             waterSystem.SystemUpdate();
+        }
+        if (CurrentState == GameState.Planning)
+        {
+            zoneController.SystemUpdate(world);
         }
     }
 }

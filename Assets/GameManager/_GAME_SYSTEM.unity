@@ -536,7 +536,7 @@ MonoBehaviour:
   riverMeanderScale: 30
   riverMeanderAmplitude: 30
   terrainScale: 0.05
-  terrainHeightMultiplier: 15
+  terrainHeightMultiplier: 12
 --- !u!4 &1085188278
 Transform:
   m_ObjectHideFlags: 0
