@@ -403,6 +403,58 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1 &522506250
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 522506251}
+  - component: {fileID: 522506252}
+  m_Layer: 0
+  m_Name: CityRendererSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &522506251
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 522506250}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 42.6638, y: 0, z: 81.29787}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1852324014}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &522506252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 522506250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c01cddb254d9ef842b7c14361fb850be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CityRendererSystem
+  world: {fileID: 1636642546}
+  cityMaterial: {fileID: 2100000, guid: 78a9aed7a5f69294da81c57b350b2460, type: 2}
+  meshStandalone: {fileID: -7382883875445574372, guid: dc710f2ac549e3548a51770a55a1c873, type: 3}
+  meshEnd: {fileID: 5405421817211279093, guid: 9a791cd273b695644839c9037752af95, type: 3}
+  meshStraight: {fileID: 263971632234626451, guid: acca1c83258a4d14f99ce110670b8507, type: 3}
+  meshCorner: {fileID: -2385572956284395213, guid: ded9605d6e2ec3b42847e7604e4850e0, type: 3}
+  meshT: {fileID: -6753811347630312594, guid: 61b4d18fe6117cb4ea67042c805b076d, type: 3}
+  meshCross: {fileID: 6584952474952830179, guid: fc19f9776a5c5a1478c5cbce9db528e6, type: 3}
 --- !u!1 &596853720
 GameObject:
   m_ObjectHideFlags: 0
@@ -434,7 +486,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WaterSimulationSystem
   simulationDelay: 0.05
   flowSpeed: 0.05
-  isFlooding: 1
+  isFlooding: 0
   targetFloodLevel: 10
   floodRiseRate: 0.05
 --- !u!4 &596853722
@@ -500,6 +552,54 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &870556137
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 870556139}
+  - component: {fileID: 870556138}
+  m_Layer: 0
+  m_Name: ZoneController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &870556138
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 870556137}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13d8faec6b3f3594093c091650a213ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ZoneController
+  currentBudget: 1000
+  brushSize: 1
+  costPerBlock: 10
+  currentTool: 0
+--- !u!4 &870556139
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 870556137}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 581.2548, y: 0, z: -378.44846}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1852324014}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1085188276
 GameObject:
@@ -693,9 +793,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bf1223d2e55732459f3374d0976b5d7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VoxelWorld
-  worldWidth: 100
-  worldHeight: 32
-  worldDepth: 100
+  worldWidth: 128
+  worldHeight: 22
+  worldDepth: 128
   waterMaterial: {fileID: 2100000, guid: bb394fd5cedd9804fbfb453d11d25dc1, type: 2}
 --- !u!4 &1636642547
 Transform:
@@ -746,6 +846,8 @@ Transform:
   - {fileID: 1636642547}
   - {fileID: 596853722}
   - {fileID: 1085188278}
+  - {fileID: 870556139}
+  - {fileID: 522506251}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &1852324016
@@ -770,6 +872,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   world: {fileID: 1636642546}
   terrainGen: {fileID: 1085188277}
+  zoneController: {fileID: 870556138}
   waterSystem: {fileID: 596853721}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

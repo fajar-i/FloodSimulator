@@ -5,12 +5,12 @@ public class TerrainGenerator : MonoBehaviour
 {
     [Header("General Settings")]
     public int seed = 12345;
-    public int groundBaseHeight = 5; 
+    public int groundBaseHeight = 5;
 
     [Header("River Settings")]
     public int riverWidth = 6;
-    public float riverMeanderScale = 30f; 
-    public float riverMeanderAmplitude = 30f; 
+    public float riverMeanderScale = 30f;
+    public float riverMeanderAmplitude = 30f;
 
     [Header("Noise Settings")]
     public float terrainScale = 0.05f; // Seberapa "zoom" noise-nya
@@ -54,16 +54,16 @@ public class TerrainGenerator : MonoBehaviour
                     float noise = Mathf.PerlinNoise((x * terrainScale) + noiseOffsetX, (z * terrainScale) + noiseOffsetZ);
                     ySurface += Mathf.RoundToInt(noise * terrainHeightMultiplier);
                 }
-                
+
                 if (isRiver)
                 {
                     // Gali tanah untuk sungai
                     ySurface = groundBaseHeight - 4;
-                    if (ySurface < 1) ySurface = 1; 
+                    if (ySurface < 1) ySurface = 1;
                 }
-
+                int maxFillHeight = Mathf.Max(ySurface, groundBaseHeight);
                 // 4. ISI VOXEL (Hanya Tanah & Air)
-                for (int y = 0; y < height; y++)
+                for (int y = 0; y < maxFillHeight; y++)
                 {
                     VoxelCell cell = new VoxelCell();
 
@@ -89,7 +89,7 @@ public class TerrainGenerator : MonoBehaviour
                         cell.amount = 0;
                     }
 
-                    voxelWorld.SetVoxel(x, y, z, cell);
+                    voxelWorld.SetVoxelSilent(x, y, z, cell);
                 }
             }
         }

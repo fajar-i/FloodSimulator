@@ -151,6 +151,17 @@ public class VoxelWorld : MonoBehaviour
         // OTOMATIS MARK DIRTY DI SINI
         MarkChunkDirty(x, y, z);
     }
+    // Gunakan ini saat Generate Awal (sangat cepat)
+    public void SetVoxelSilent(int x, int y, int z, VoxelCell data)
+    {
+        if (!IsValidIndex(x, y, z)) return;
+        int idx = GetIndex(x, y, z);
+        ActiveGrid[idx] = data;
+        NextGrid[idx] = data;
+        // BEDANYA DI SINI: Tidak ada MarkChunkDirty()!
+    }
+
+    // Panggil ini SETELAH loop generate selesai
 
     public void MarkChunkDirty(int x, int y, int z)
     {

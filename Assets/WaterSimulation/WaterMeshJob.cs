@@ -44,6 +44,8 @@ public struct WaterChunkMeshJob : IJob
 
                     // Skip jika kosong
                     if (cell.amount < 0.01f && !cell.isSolid) continue;
+                    // skip perairan karena langsung pakai mesh
+                    if (cell.isSolid && cell.blockType == 11) continue;
 
                     float3 localPos = new float3(x, y, z);
                     float height = cell.isSolid ? 1.0f : cell.amount; // Solid selalu penuh
@@ -132,33 +134,33 @@ public struct WaterChunkMeshJob : IJob
         switch (faceDir)
         {
             case 0: // Top (Y+1) - OK
-                // Melihat dari atas ke bawah
+                    // Melihat dari atas ke bawah
                 vertices.Add(t0); vertices.Add(t2); vertices.Add(t3); vertices.Add(t1);
                 break;
 
             case 1: // Bottom (Y-1) - OK
-                // Melihat dari bawah ke atas
+                    // Melihat dari bawah ke atas
                 vertices.Add(b2); vertices.Add(b0); vertices.Add(b1); vertices.Add(b3);
                 break;
 
             case 2: // Left / West (X-1) - DIPERBAIKI
-                // Melihat dari kiri ke kanan (Lihat ke arah X positif)
-                // Urutan: Belakang-Bawah (b2) -> Belakang-Atas (t2) -> Depan-Atas (t0) -> Depan-Bawah (b0)
+                    // Melihat dari kiri ke kanan (Lihat ke arah X positif)
+                    // Urutan: Belakang-Bawah (b2) -> Belakang-Atas (t2) -> Depan-Atas (t0) -> Depan-Bawah (b0)
                 vertices.Add(b2); vertices.Add(t2); vertices.Add(t0); vertices.Add(b0);
                 break;
 
             case 3: // Right / East (X+1) - DIPERBAIKI
-                // Melihat dari kanan ke kiri (Lihat ke arah X negatif)
+                    // Melihat dari kanan ke kiri (Lihat ke arah X negatif)
                 vertices.Add(b1); vertices.Add(t1); vertices.Add(t3); vertices.Add(b3);
                 break;
 
             case 4: // Back / South (Z-1) - DIPERBAIKI
-                // Melihat dari belakang ke depan (Lihat ke arah Z positif)
+                    // Melihat dari belakang ke depan (Lihat ke arah Z positif)
                 vertices.Add(b0); vertices.Add(t0); vertices.Add(t1); vertices.Add(b1);
                 break;
 
             case 5: // Front / North (Z+1) - DIPERBAIKI
-                // Melihat dari depan ke belakang (Lihat ke arah Z negatif)
+                    // Melihat dari depan ke belakang (Lihat ke arah Z negatif)
                 vertices.Add(b3); vertices.Add(t3); vertices.Add(t2); vertices.Add(b2);
                 break;
         }

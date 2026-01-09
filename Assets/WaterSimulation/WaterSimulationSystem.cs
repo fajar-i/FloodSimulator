@@ -29,17 +29,21 @@ public class WaterSimulationSystem : MonoBehaviour
     {
         if (Keyboard.current.spaceKey.isPressed)
         {
-            NativeArray<VoxelCell> currentGrid = world.ActiveGrid;
-            int midX = world.worldWidth / 2;
-            int midY = world.worldHeight - 5;
-            int midZ = world.worldDepth / 2;
-            int idx = midX + world.worldWidth * (midY + world.worldHeight * midZ);
-
-            if (idx >= 0 && idx < currentGrid.Length)
+            for (int i = 0; i < 10; i++)
             {
-                VoxelCell c = currentGrid[idx];
-                c.amount = 1.0f; c.isSolid = false; c.blockType = 0; // Tipe Air
-                currentGrid[idx] = c;
+
+                NativeArray<VoxelCell> currentGrid = world.ActiveGrid;
+                int midX = UnityEngine.Random.Range(0, world.worldWidth);
+                int midY = world.worldHeight - 5;
+                int midZ = UnityEngine.Random.Range(0, world.worldDepth);
+                int idx = midX + world.worldWidth * (midY + world.worldHeight * midZ);
+
+                if (idx >= 0 && idx < currentGrid.Length)
+                {
+                    VoxelCell c = currentGrid[idx];
+                    c.amount = 1.0f; c.isSolid = false; c.blockType = 0; // Tipe Air
+                    currentGrid[idx] = c;
+                }
             }
         }
         if (isFlooding)

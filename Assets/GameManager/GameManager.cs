@@ -77,6 +77,18 @@ public class GameManager : MonoBehaviour
         {
             case GameState.Planning:
                 ChangeState(GameState.Construction);
+                int i = 0;
+                foreach (VoxelCell cell in world.ActiveGrid)
+                {
+                    if (cell.blockType == 0)//if air (water)
+                    {
+                        VoxelCell newcell = cell;
+                        newcell.isSolid = false;
+                        world.ActiveGrid[i] = newcell;
+                    }
+
+                    i++;
+                }
                 break;
             case GameState.Construction:
                 ChangeState(GameState.Simulation);
