@@ -31,7 +31,7 @@ public class ZoneController : MonoBehaviour
         if (Keyboard.current.digit1Key.wasPressedThisFrame) selectedZoneID = 1; // tanah
         if (Keyboard.current.digit2Key.wasPressedThisFrame) selectedZoneID = 2; // beton
         if (Keyboard.current.digit3Key.wasPressedThisFrame) selectedZoneID = 3; // Industri
-        if (Keyboard.current.digit4Key.wasPressedThisFrame) selectedZoneID = 4; // Selokan / perairan
+        if (Keyboard.current.digit4Key.wasPressedThisFrame) selectedZoneID = 11; // Selokan / perairan
 
         // --- LOGIKA RAYCAST ---
         var cursorposition = Mouse.current.position.ReadValue();
