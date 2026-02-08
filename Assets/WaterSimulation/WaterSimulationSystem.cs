@@ -7,8 +7,10 @@ using Unity.Collections;
 public class WaterSimulationSystem : MonoBehaviour
 {
     [Header("Settings")]
-    public float simulationDelay = 0.05f;
+    public float simulationDelay = 1f;
     public float flowSpeed = 0.05f;
+    [Header("speedup (0-8)")]
+    public byte speedUpBy = 1;
 
     [Header("Flood Controls")]
     public bool isFlooding = false;
@@ -16,6 +18,7 @@ public class WaterSimulationSystem : MonoBehaviour
     public float floodRiseRate = 0.05f;
     private float floodTimer = 0f;
     private float tickTimer = 0f;
+
 
     private VoxelWorld world;
 
@@ -33,10 +36,14 @@ public class WaterSimulationSystem : MonoBehaviour
             {
 
                 NativeArray<VoxelCell> currentGrid = world.ActiveGrid;
+                // Di SystemUpdate
                 int midX = UnityEngine.Random.Range(0, world.worldWidth);
                 int midY = world.worldHeight - 5;
                 int midZ = UnityEngine.Random.Range(0, world.worldDepth);
-                int idx = midX + world.worldWidth * (midY + world.worldHeight * midZ);
+
+                // Rumus Indexing yang Konsisten dengan Job Execute Anda:
+                // x + (width * y) + (width * height * z)
+                int idx = midX + (world.worldWidth * midY) + (world.worldWidth * world.worldHeight * midZ);
 
                 if (idx >= 0 && idx < currentGrid.Length)
                 {
@@ -61,7 +68,10 @@ public class WaterSimulationSystem : MonoBehaviour
         if (tickTimer >= simulationDelay)
         {
             tickTimer -= simulationDelay;
-            RunPhysicStep();
+            for (int i = 0; i < speedUpBy; i++)
+            {
+                RunPhysicStep();
+            }
             // Setelah fisika selesai, suruh World render ulang
             world.UpdateAllChunks();
         }

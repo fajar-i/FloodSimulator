@@ -3,9 +3,9 @@ using UnityEngine.InputSystem;
 
 public class ZoneController : MonoBehaviour
 {
-    [SerializeField] private int currentBudget = 1000;
+    [SerializeField] private int currentBudget = 1000000000;
     [SerializeField] private int brushSize = 1; // Default 0 (1 blok)
-    [SerializeField] private int costPerBlock = 10;
+    [SerializeField] private int costPerBlock = 1;
 
     // Referensi ke Database
     private VoxelWorld world;
@@ -14,7 +14,7 @@ public class ZoneController : MonoBehaviour
     public PaintTool currentTool;
 
     // ID untuk Selokan (Misal kita sepakati ID 11 adalah Selokan)
-    private byte selectedZoneID = 0;
+    private byte selectedZoneID = 1; //default tanah
 
     // Variable bayangan untuk Gizmos
     private Vector3 lastHitPos;
@@ -27,11 +27,11 @@ public class ZoneController : MonoBehaviour
 
         // --- INPUT PILIH ZONA ---
         // 1 = Selokan (ID 11), 2 = Jalan (ID 10) - Contoh saja
-        if (Keyboard.current.digit0Key.wasPressedThisFrame) selectedZoneID = 0; // Air(Water)
-        if (Keyboard.current.digit1Key.wasPressedThisFrame) selectedZoneID = 1; // tanah
-        if (Keyboard.current.digit2Key.wasPressedThisFrame) selectedZoneID = 2; // beton
-        if (Keyboard.current.digit3Key.wasPressedThisFrame) selectedZoneID = 3; // Industri
-        if (Keyboard.current.digit4Key.wasPressedThisFrame) selectedZoneID = 11; // Selokan / perairan
+        if (Keyboard.current.digit0Key.wasPressedThisFrame) selectedZoneID = 0; // Air(Water) = 0
+        if (Keyboard.current.digit1Key.wasPressedThisFrame) selectedZoneID = 1; // tanah = 1
+        if (Keyboard.current.digit2Key.wasPressedThisFrame) selectedZoneID = 2; // beton = 2
+        if (Keyboard.current.digit3Key.wasPressedThisFrame) selectedZoneID = 3; // Industri = 3
+        // if (Keyboard.current.digit4Key.wasPressedThisFrame) selectedZoneID = 11; // Selokan / perairan
 
         // --- LOGIKA RAYCAST ---
         var cursorposition = Mouse.current.position.ReadValue();
@@ -60,13 +60,29 @@ public class ZoneController : MonoBehaviour
         }
     }
 
+    public void finish()
+    {
+        int i = 0;
+        foreach (VoxelCell cell in world.ActiveGrid)
+        {
+            if (cell.blockType == 0)//if air (water)
+            {
+                VoxelCell newcell = cell;
+                newcell.isSolid = false;
+                world.ActiveGrid[i] = newcell;
+            }
+
+            i++;
+        }
+    }
+
     void ApplyPaint(int centerX, int centerZ)
     {
         if (world == null) return;
 
-        for (int x = -brushSize; x <= brushSize; x++)
+        for (int x = brushSize; x <= brushSize; x++)
         {
-            for (int z = -brushSize; z <= brushSize; z++)
+            for (int z = brushSize; z <= brushSize; z++)
             {
                 int paintX = centerX + x;
                 int paintZ = centerZ + z;

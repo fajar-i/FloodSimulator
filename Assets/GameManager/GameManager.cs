@@ -76,19 +76,8 @@ public class GameManager : MonoBehaviour
         switch (CurrentState)
         {
             case GameState.Planning:
+                zoneController.finish();
                 ChangeState(GameState.Construction);
-                int i = 0;
-                foreach (VoxelCell cell in world.ActiveGrid)
-                {
-                    if (cell.blockType == 0)//if air (water)
-                    {
-                        VoxelCell newcell = cell;
-                        newcell.isSolid = false;
-                        world.ActiveGrid[i] = newcell;
-                    }
-
-                    i++;
-                }
                 break;
             case GameState.Construction:
                 ChangeState(GameState.Simulation);
@@ -109,13 +98,13 @@ public class GameManager : MonoBehaviour
         {
             NextPhase();
         }
-        if (CurrentState == GameState.Simulation)
-        {
-            waterSystem.SystemUpdate();
-        }
         if (CurrentState == GameState.Planning)
         {
             zoneController.SystemUpdate(world);
+        }
+        if (CurrentState == GameState.Simulation)
+        {
+            waterSystem.SystemUpdate();
         }
     }
 }

@@ -9,16 +9,21 @@ public struct WaterPullJob : IJobParallelFor
     [ReadOnly] public NativeArray<VoxelCell> readGrid;
     public NativeArray<VoxelCell> writeGrid;
     public int3 size;
-    
-    // Kecepatan menyebar (0.1 = lambat/kental, 0.5 = cepat/encer)
-    public float flowSpeed; 
+
+    // Kecepatan menyebar dasar
+    public float flowSpeed;
+
+    // Ambang batas air tergenang (Depression Storage)
+    // Air di bawah level ini dianggap terjebak di cekungan mikro dan tidak mengalir lateral
+    private const float DEPRESSION_STORAGE = 0.05f;
 
     public void Execute(int i)
     {
         VoxelCell myState = readGrid[i];
-        
+
         // Tembok tidak memproses air
-        if (myState.isSolid) {
+        if (myState.isSolid)
+        {
             writeGrid[i] = myState;
             return;
         }
@@ -29,29 +34,34 @@ public struct WaterPullJob : IJobParallelFor
         int z = i / (size.x * size.y);
 
         float currentAmount = myState.amount;
-        float change = 0f; // Penampung perubahan total frame ini
+        float change = 0f;
 
         // ==========================================
         // 1. LOGIKA VERTIKAL (GRAVITASI)
         // ==========================================
-        
+        // (Tidak berubah, logika vertikal Anda sudah efisien)
+
         // Cek ATAS (Terima air)
-        if (y < size.y - 1) {
+        if (y < size.y - 1)
+        {
             int upIdx = i + size.x;
             VoxelCell upCell = readGrid[upIdx];
-            if (!upCell.isSolid && upCell.amount > 0) {
+            if (!upCell.isSolid && upCell.amount > 0)
+            {
                 float space = 1.0f - currentAmount;
-                // Air jatuh sangat cepat
-                change += math.min(upCell.amount, space); 
+                change += math.min(upCell.amount, space);
             }
         }
 
         // Cek BAWAH (Buang air)
-        if (y > 0) {
+        if (y > 0)
+        {
             int downIdx = i - size.x;
             VoxelCell downCell = readGrid[downIdx];
-            if (!downCell.isSolid) {
-                if (downCell.amount < 1.0f) {
+            if (!downCell.isSolid)
+            {
+                if (downCell.amount < 1.0f)
+                {
                     float spaceBelow = 1.0f - downCell.amount;
                     change -= math.min(currentAmount, spaceBelow);
                 }
@@ -59,11 +69,14 @@ public struct WaterPullJob : IJobParallelFor
         }
 
         // ==========================================
-        // 2. LOGIKA HORIZONTAL (MENYEBAR)
+        // 2. LOGIKA HORIZONTAL (CA-DUSRM ADAPTED)
         // ==========================================
-        
-        // Kita definisikan manual arahnya agar hemat memori (tanpa array alokasi)
-        // Kiri, Kanan, Belakang, Depan
+
+        // Tentukan faktor kekasaran SAYA (Sender Roughness)
+        // BlockType 2 (Beton) = Licin (1.0), BlockType 1 (Tanah) = Kasar (0.3)
+        //
+        float myRoughness = (myState.blockType == 2) ? 1.0f : 0.3f;
+
         int4 dirX = new int4(-1, 1, 0, 0);
         int4 dirZ = new int4(0, 0, -1, 1);
 
@@ -72,26 +85,59 @@ public struct WaterPullJob : IJobParallelFor
             int nX = x + dirX[d];
             int nZ = z + dirZ[d];
 
-            // Pastikan tetangga masih di dalam grid (tidak keluar map)
             if (nX >= 0 && nX < size.x && nZ >= 0 && nZ < size.z)
             {
-                // --- PERBAIKAN RUMUS INDEX DI SINI ---
                 int nIdx = nX + (size.x * y) + (size.x * size.y * nZ);
-                // -------------------------------------
-                
                 VoxelCell neighbor = readGrid[nIdx];
 
                 if (!neighbor.isSolid)
                 {
-                    // Hitung selisih air saya dengan tetangga
+                    // ... di dalam loop for 4 arah ...
+
+                    // Hitung perbedaan air
                     float diff = currentAmount - neighbor.amount;
 
-                    // Stabilisasi: Hanya alirkan jika selisihnya cukup signifikan
                     if (math.abs(diff) > 0.01f)
                     {
-                        // Bagi 4 agar tidak membuang semua air ke satu arah saja
-                        float flow = (diff * flowSpeed) / 4.0f;
-                        change -= flow; 
+                        // KASUS A: OUTFLOW (Saya -> Tetangga)
+                        if (diff > 0)
+                        {
+                            if (currentAmount > DEPRESSION_STORAGE)
+                            {
+                                // 1. Hitung keinginan aliran (Desired Flow)
+                                float desiredFlow = (diff * flowSpeed * myRoughness) * 0.25f;
+
+                                // 2. [FIX] Batasi aliran! 
+                                // Kita tidak boleh memberi lebih dari 1/4 air yang kita miliki per arah
+                                // atau melebihi diff/4 (agar tidak overshoot/bolak-balik)
+                                float maxFlowPossible = currentAmount * 0.25f;
+
+                                // Pilih yang paling kecil agar aman
+                                float actualFlow = math.min(desiredFlow, maxFlowPossible);
+
+                                change -= actualFlow;
+                            }
+                        }
+                        // KASUS B: INFLOW (Tetangga -> Saya)
+                        else
+                        {
+                            if (neighbor.amount > DEPRESSION_STORAGE)
+                            {
+                                float neighborRoughness = (neighbor.blockType == 2) ? 1.0f : 0.3f;
+
+                                // 1. Hitung keinginan aliran (Note: diff negatif, jadi flow negatif)
+                                float desiredFlow = (diff * flowSpeed * neighborRoughness) * 0.25f;
+
+                                // 2. [FIX] Batasi aliran masuk!
+                                // Tetangga tidak bisa memberi lebih dari 1/4 air yang DIA miliki
+                                float maxInflowPossible = neighbor.amount * 0.25f;
+
+                                // math.max karena angkanya negatif (misal: max(-2.5, -0.25) = -0.25)
+                                float actualFlow = math.max(desiredFlow, -maxInflowPossible);
+
+                                change -= actualFlow; // Minus ketemu minus jadi plus
+                            }
+                        }
                     }
                 }
             }
@@ -100,9 +146,9 @@ public struct WaterPullJob : IJobParallelFor
         // ==========================================
         // 3. FINALISASI
         // ==========================================
-        
+
         float finalAmount = currentAmount + change;
-        finalAmount = math.saturate(finalAmount); // Kunci angka di antara 0.0 - 1.0
+        finalAmount = math.saturate(finalAmount);
 
         VoxelCell result = myState;
         result.amount = finalAmount;
