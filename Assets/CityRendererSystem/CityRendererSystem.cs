@@ -1,151 +1,188 @@
-// using System.Collections.Generic;
-// using UnityEngine;
+using System.Collections.Generic;
+using UnityEngine;
 
-// public class CityRendererSystem : MonoBehaviour
-// {
-//     public VoxelWorld world;
-//     public Material cityMaterial; // Material Atlas
+public class CityRendererSystem : MonoBehaviour
+{
+    private VoxelWorld world;
+    public Material cityMaterial;
+    private BuildingRegistry buildingDatabase;
 
-//     [Header("Gutter Meshes")]
-//     public Mesh meshStandalone;
-//     public Mesh meshEnd;
-//     public Mesh meshStraight;
-//     public Mesh meshCorner;
-//     public Mesh meshT;
-//     public Mesh meshCross;
+    // Mapping ID -> Index Batch di List utama
+    // Jika Connectable, int ini menunjuk ke index mesh pertama (Standalone)
+    private Dictionary<byte, int> idToBatchIndex;
 
-//     // ID Selokan yang akan dirender (Sesuai dengan Controller tadi)
-//     private const byte ID_GUTTER = 11;
+    // Penyimpanan Batch
+    private List<List<Matrix4x4>> batches;
+    private List<Mesh> batchMeshes;
 
-//     // Buffer untuk GPU Instancing
-//     private List<Matrix4x4>[] batchLists; // Array of Lists (untuk tiap mesh)
-//     private Mesh[] meshTypes; // Array referensi mesh
+    public void Initialize(VoxelWorld currentWorld, BuildingRegistry globalRegistry)
+    {
+        world = currentWorld;
+        buildingDatabase = globalRegistry;
+        InitializeBatches();
+    }
 
-//     void Start()
-//     {
-//         // Setup sederhana untuk menampung batch data
-//         // Urutan: 0=Standalone, 1=End, 2=Straight, 3=Corner, 4=T, 5=Cross
-//         batchLists = new List<Matrix4x4>[6];
-//         for (int i = 0; i < 6; i++) batchLists[i] = new List<Matrix4x4>();
+    public void RebuildAllBatches()
+    {
+        if (world == null) return;
+        InitializeBatches(); // Setup wadah batch berdasarkan Database terbaru
 
-//         meshTypes = new Mesh[] { meshStandalone, meshEnd, meshStraight, meshCorner, meshT, meshCross };
-//     }
+        Debug.Log("Renderer: Scanning World...");
 
-//     void Update()
-//     {
-//         if (world == null) return;
+        for (int x = 0; x < world.worldWidth; x++)
+        {
+            for (int z = 0; z < world.worldDepth; z++)
+            {
+                int y = FindSurfaceY(x, z);
+                if (y == -1) continue;
 
-//         // 1. BERSIHKAN DATA LAMA
-//         for (int i = 0; i < 6; i++) batchLists[i].Clear();
+                VoxelCell cell = world.GetVoxel(x, y, z);
+                byte id = cell.blockType;
 
-//         // 2. SCANNING & BITMASKING
-//         // (Optimasi: Nanti bisa dipindah agar tidak loop setiap frame, tapi untuk sekarang oke)
-//         for (int x = 0; x < world.worldWidth; x++)
-//         {
-//             for (int z = 0; z < world.worldDepth; z++)
-//             {
-//                 // Kita cari permukaan tanah lagi untuk render
-//                 // (Atau simpan koordinat ini di data lain agar cepat)
-//                 int y = FindSurfaceY(x, z);
-//                 if (y == -1) continue;
+                // Cek apakah ID ini terdaftar di sistem batch kita?
+                if (idToBatchIndex.ContainsKey(id))
+                {
+                    // Ambil Datanya
+                    var data = buildingDatabase.GetDataByID(id);
+                    int baseBatchIndex = idToBatchIndex[id];
 
-//                 VoxelCell cell = world.GetVoxel(x, y, z);
+                    if (data.renderType == BuildingRegistry.RenderType.StaticProp)
+                    {
+                        // --- LOGIKA STATIC (RUMAH/POHON) ---
+                        Quaternion rot = Quaternion.Euler(0, cell.rotation * 90f, 0);
+                        Vector3 pos = new Vector3(x + 0.5f, y, z + 0.5f) + data.visualOffset;
+                        Vector3 scale = Vector3.one * (data.visualScale == 0 ? 1 : data.visualScale);
 
-//                 // Jika ketemu blok Selokan (ID 4)
-//                 if (cell.blockType == ID_GUTTER)
-//                 {
-//                     int mask = CalculateBitmask(world, x, y, z, ID_GUTTER);
-//                     AddToBatch(x, y, z, mask);
-//                 }
-//             }
-//         }
+                        batches[baseBatchIndex].Add(Matrix4x4.TRS(pos, rot, scale));
+                    }
+                    else if (data.renderType == BuildingRegistry.RenderType.Connectable)
+                    {
+                        // --- LOGIKA CONNECTABLE (JALAN/SELOKAN) ---
+                        // 1. Hitung Bitmask (Siapa tetangga saya?)
+                        int mask = CalculateBitmask(world, x, y, z, id);
 
-//         // 3. GAMBAR KE LAYAR (GPU INSTANCING)
-//         for (int i = 0; i < 6; i++)
-//         {
-//             if (batchLists[i].Count > 0 && meshTypes[i] != null)
-//             {
-//                 Graphics.DrawMeshInstanced(
-//                     meshTypes[i],
-//                     0,
-//                     cityMaterial,
-//                     batchLists[i]
-//                 );
-//             }
-//         }
-//     }
+                        // 2. Terjemahkan Mask (0-15) menjadi Shape Index (0-5) & Rotasi
+                        GetShapeAndRotation(mask, out int shapeIndex, out Quaternion rot);
 
-//     // --- LOGIKA BITMASKING (Pindahan dari kode Anda) ---
-//     int CalculateBitmask(VoxelWorld world, int x, int y, int z, byte myType)
-//     {
-//         int mask = 0;
-//         if (IsConnectable(world, x, y, z + 1, myType)) mask += 1; // Utara
-//         if (IsConnectable(world, x - 1, y, z, myType)) mask += 2; // Barat
-//         if (IsConnectable(world, x + 1, y, z, myType)) mask += 4; // Timur
-//         if (IsConnectable(world, x, y, z - 1, myType)) mask += 8; // Selatan
-//         return mask;
-//     }
+                        // 3. Masukkan ke Batch yang tepat
+                        // (baseBatchIndex + shapeIndex) karena kita alokasikan 6 slot berurutan
+                        int targetBatch = baseBatchIndex + shapeIndex;
 
-//     bool IsConnectable(VoxelWorld world, int x, int y, int z, byte myType)
-//     {
-//         // Cek batas array dulu
-//         if (x < 0 || x >= world.worldWidth || z < 0 || z >= world.worldDepth) return false;
+                        Vector3 pos = new Vector3(x + 0.5f, y + data.yOffset, z + 0.5f);
 
-//         // Asumsi selokan ada di ketinggian yang sama (y)
-//         // Kalau mau lebih canggih, cek y+1 atau y-1 juga (tanjakan)
-//         VoxelCell neighbor = world.GetVoxel(x, y, z);
-//         return neighbor.blockType == myType;
-//     }
+                        // Fix rotasi tegak (Blender Z-up vs Unity Y-up) jika perlu
+                        // rot = rot * Quaternion.Euler(-90, 0, 0); // Aktifkan jika model tidur
 
-//     void AddToBatch(int x, int y, int z, int mask)
-//     {
-//         int meshIndex = 0;
-//         Quaternion rotation = Quaternion.identity;
+                        batches[targetBatch].Add(Matrix4x4.TRS(pos, rot, Vector3.one));
+                    }
+                }
+            }
+        }
+    }
 
-//         // Logika Switch Case Anda yang Tepat
-//         switch (mask)
-//         {
-//             case 0: meshIndex = 0; break; // Standalone
+    public void OnUpdate()
+    {
+        // Gambar semua batch yang sudah diisi
+        for (int i = 0; i < batches.Count; i++)
+        {
+            if (batches[i].Count > 0)
+                Graphics.DrawMeshInstanced(batchMeshes[i], 0, cityMaterial, batches[i]);
+        }
+    }
 
-//             case 1: meshIndex = 1; rotation = Quaternion.Euler(0, 0, 0); break;
-//             case 8: meshIndex = 1; rotation = Quaternion.Euler(0, 180, 0); break;
-//             case 2: meshIndex = 1; rotation = Quaternion.Euler(0, 270, 0); break;
-//             case 4: meshIndex = 1; rotation = Quaternion.Euler(0, 90, 0); break;
+    // --- INISIALISASI PINTAR ---
+    void InitializeBatches()
+    {
+        idToBatchIndex = new Dictionary<byte, int>();
+        batches = new List<List<Matrix4x4>>();
+        batchMeshes = new List<Mesh>();
+        int counter = 0;
 
-//             case 9: meshIndex = 2; rotation = Quaternion.Euler(0, 0, 0); break;  // Straight Vert
-//             case 6: meshIndex = 2; rotation = Quaternion.Euler(0, 90, 0); break; // Straight Horz
+        foreach (var data in buildingDatabase.buildings)
+        {
+            if (data.renderType == BuildingRegistry.RenderType.StaticProp)
+            {
+                // Alokasi 1 Batch
+                batches.Add(new List<Matrix4x4>());
+                batchMeshes.Add(data.mesh);
+                idToBatchIndex.Add(data.id, counter);
+                counter++;
+            }
+            else if (data.renderType == BuildingRegistry.RenderType.Connectable)
+            {
+                // Alokasi 6 Batch Berurutan
+                // Urutan: 0=Standalone, 1=End, 2=Straight, 3=Corner, 4=T, 5=Cross
+                if (data.connectionMeshes == null || data.connectionMeshes.Length < 6)
+                {
+                    Debug.LogError($"Error: Item {data.name} (Connectable) tidak punya 6 mesh lengkap!");
+                    continue;
+                }
 
-//             case 3: meshIndex = 3; rotation = Quaternion.Euler(0, -90, 0); break;
-//             case 5: meshIndex = 3; rotation = Quaternion.Euler(0, 0, 0); break;
-//             case 10: meshIndex = 3; rotation = Quaternion.Euler(0, 180, 0); break;
-//             case 12: meshIndex = 3; rotation = Quaternion.Euler(0, 90, 0); break;
+                idToBatchIndex.Add(data.id, counter); // Catat index awal
 
-//             case 7: meshIndex = 4; rotation = Quaternion.Euler(0, 0, 0); break;    // T
-//             case 11: meshIndex = 4; rotation = Quaternion.Euler(0, -90, 0); break;
-//             case 13: meshIndex = 4; rotation = Quaternion.Euler(0, 90, 0); break;
-//             case 14: meshIndex = 4; rotation = Quaternion.Euler(0, 180, 0); break;
+                for (int i = 0; i < 6; i++)
+                {
+                    batches.Add(new List<Matrix4x4>());
+                    batchMeshes.Add(data.connectionMeshes[i]);
+                    counter++;
+                }
+            }
+        }
+    }
 
-//             case 15: meshIndex = 5; break; // Cross
-//             default: meshIndex = 0; break; // Fallback
-//         }
-        
-//         Vector3 pos = new Vector3(x + 0.5f, y + 0.9f, z + 0.5f); // +0.5f agar di atas tanah (sesuaikan pivot)
-//         if (meshIndex == 5)
-//         {
-//             pos = new Vector3(x + 0.5f, y + 0.8f, z + 0.5f); // +0.5f agar di atas tanah (sesuaikan pivot)
-//         }
-//         Matrix4x4 mat = Matrix4x4.TRS(pos, rotation, Vector3.one);
+    // --- LOGIKA MATEMATIKA BITMASK (UNIVERSAL) ---
+    void GetShapeAndRotation(int mask, out int shapeIndex, out Quaternion rotation)
+    {
+        shapeIndex = 0; // Default Standalone
+        rotation = Quaternion.identity;
 
-//         batchLists[meshIndex].Add(mat);
-//     }
+        switch (mask)
+        {
+            case 0: shapeIndex = 0; break;
 
-//     // Helper duplicate untuk cari Y (ideally simpan ini di VoxelWorld biar ga duplikat)
-//     int FindSurfaceY(int x, int z)
-//     {
-//         for (int y = world.worldHeight - 1; y >= 0; y--)
-//         {
-//             if (world.GetVoxel(x, y, z).isSolid) return y;
-//         }
-//         return -1;
-//     }
-// }
+            case 1: shapeIndex = 1; rotation = Quaternion.Euler(0, 0, 0); break;   // N
+            case 8: shapeIndex = 1; rotation = Quaternion.Euler(0, 180, 0); break; // S
+            case 2: shapeIndex = 1; rotation = Quaternion.Euler(0, 270, 0); break; // W
+            case 4: shapeIndex = 1; rotation = Quaternion.Euler(0, 90, 0); break;  // E
+
+            case 9: shapeIndex = 2; rotation = Quaternion.Euler(0, 0, 0); break;   // Vert
+            case 6: shapeIndex = 2; rotation = Quaternion.Euler(0, 90, 0); break;  // Horz
+
+            case 3: shapeIndex = 3; rotation = Quaternion.Euler(0, -90, 0); break; // N+W
+            case 5: shapeIndex = 3; rotation = Quaternion.Euler(0, 0, 0); break;   // N+E
+            case 10: shapeIndex = 3; rotation = Quaternion.Euler(0, 180, 0); break;// S+W
+            case 12: shapeIndex = 3; rotation = Quaternion.Euler(0, 90, 0); break; // S+E
+
+            case 7: shapeIndex = 4; rotation = Quaternion.Euler(0, 0, 0); break;   // T (No S)
+            case 11: shapeIndex = 4; rotation = Quaternion.Euler(0, -90, 0); break;// T (No E)
+            case 13: shapeIndex = 4; rotation = Quaternion.Euler(0, 90, 0); break; // T (No W)
+            case 14: shapeIndex = 4; rotation = Quaternion.Euler(0, 180, 0); break;// T (No N)
+
+            case 15: shapeIndex = 5; break; // Cross
+        }
+    }
+
+    int CalculateBitmask(VoxelWorld world, int x, int y, int z, byte myType)
+    {
+        int mask = 0;
+        if (IsSameType(world, x, y, z + 1, myType)) mask += 1;
+        if (IsSameType(world, x - 1, y, z, myType)) mask += 2;
+        if (IsSameType(world, x + 1, y, z, myType)) mask += 4;
+        if (IsSameType(world, x, y, z - 1, myType)) mask += 8;
+        return mask;
+    }
+
+    bool IsSameType(VoxelWorld world, int x, int y, int z, byte type)
+    {
+        if (!world.IsValidIndex(x, y, z)) return false;
+        // Opsional: Cek y+1 / y-1 untuk jalan menanjak
+        return world.GetVoxel(x, y, z).blockType == type;
+    }
+
+    int FindSurfaceY(int x, int z)
+    {
+        for (int y = world.worldHeight - 1; y >= 0; y--)
+            if (world.GetVoxel(x, y, z).isSolid) return y;
+        return -1;
+    }
+}

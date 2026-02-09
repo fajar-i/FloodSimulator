@@ -4,7 +4,7 @@ public struct VoxelCell
     public float amount; // 0.0 - 1.0 (Air)
     public bool isSolid; // True = Tanah/Gedung
     public int absorption;
-    
+    public byte rotation;  // [BARU] 0=0, 1=90, 2=180, 3=270
     public byte blockType; // 0 = Air(Water), 1 = Tanah/Rumput, 2 = Beton/Gedung, 3 = Batu/Industri
 }
 

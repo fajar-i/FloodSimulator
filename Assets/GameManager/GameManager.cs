@@ -14,6 +14,7 @@ public class GameManager : MonoBehaviour
     [Header("Modules")]
     public VoxelWorld world;
     public TerrainGenerator terrainGen;
+    public CityGameManager cityGameManager;
     public ZoneController zoneController;
     public WaterSimulationSystem waterSystem; // Logic
     // public ChunkedWaterManager disasterController;
@@ -25,7 +26,6 @@ public class GameManager : MonoBehaviour
     {
         // 1. Inisialisasi Berurutan (Anti-Race Condition)
         world.InitializeWorld();
-        waterSystem.Initialize(world);
         ChangeState(GameState.Initialization);
     }
 
@@ -37,30 +37,21 @@ public class GameManager : MonoBehaviour
         switch (newState)
         {
             case GameState.Initialization:
-                // Generate Terrain Awal
-                terrainGen.GenerateTerrain(world);
-
-                // Setelah selesai generate, langsung masuk ke fase Planning (walau masih kosong)
-                ChangeState(GameState.Planning);
+                terrainGen.GenerateTerrain(world); // Generate Terrain Awal
+                ChangeState(GameState.Planning); // Setelah selesai generate, langsung masuk ke fase Planning (walau masih kosong)
                 break;
 
             case GameState.Planning:
-                Debug.Log("Fase Planning: Menunggu input player (Fitur belum aktif). Tekan ENTER untuk lanjut.");
-                // TO DO: zoneController.EnableInput(true);
+                Debug.Log("Fase Planning: Menunggu input player... Tekan ENTER untuk lanjut.");
                 break;
 
             case GameState.Construction:
-                Debug.Log("Fase Construction: Membangun gedung... (Fitur belum aktif).");
-                // TO DO: zoneController.EnableInput(false);
-                // TO DO: StructureBuilder.BuildStructures(world);
-
-                // Langsung lanjut ke simulasi untuk testing
-                // ChangeState(GameState.Simulation); 
+                Debug.Log("Fase Construction: Membangun gedung...");
+                cityGameManager.Initialize();
                 break;
 
             case GameState.Simulation:
                 Debug.Log("Fase Simulation: Banjir dimulai!");
-
                 // TO DO: world.isFlooding = true; // Kita bisa akses flag banjir di sini
                 break;
 
@@ -104,7 +95,8 @@ public class GameManager : MonoBehaviour
         }
         if (CurrentState == GameState.Simulation)
         {
-            waterSystem.SystemUpdate();
+            waterSystem.SystemUpdate(world);
         }
+        cityGameManager.OnUpdate();
     }
 }

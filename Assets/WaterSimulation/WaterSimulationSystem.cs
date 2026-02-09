@@ -22,14 +22,10 @@ public class WaterSimulationSystem : MonoBehaviour
 
     private VoxelWorld world;
 
-    public void Initialize(VoxelWorld connectedWorld)
+    // Dipanggil oleh GameManager setiap frame 
+    public void SystemUpdate(VoxelWorld connectedWorld)
     {
         world = connectedWorld;
-    }
-
-    // Dipanggil oleh GameManager setiap frame 
-    public void SystemUpdate()
-    {
         if (Keyboard.current.spaceKey.isPressed)
         {
             for (int i = 0; i < 10; i++)

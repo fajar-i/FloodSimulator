@@ -113,7 +113,7 @@ public class VoxelWorld : MonoBehaviour
         chunk.meshCollider.sharedMesh = chunk.mesh;
     }
 
-    bool IsValidIndex(int x, int y, int z)
+    public bool IsValidIndex(int x, int y, int z)
     {
         return x >= 0 && x < worldWidth &&
          y >= 0 && y < worldHeight &&
