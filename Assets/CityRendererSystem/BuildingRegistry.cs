@@ -11,23 +11,21 @@ public class BuildingRegistry : ScriptableObject
     {
         public string name;
         public byte id;
-
-        [Header("Data Konstruksi (Untuk Builder)")]
-        public int width;
-        public int depth;
-        public ZoneType zone;    // Enum ZoneType harus public/ada di luar
+        public Material material;
 
         [Header("Tipe Rendering")]
         public RenderType renderType; // Pilih: Static atau Connectable?
 
         [Header("Jika Static Prop")]
+        public ZoneType zone;    // Enum ZoneType harus public/ada di luar
         public Mesh mesh;       // Mesh tunggal
+        public int width;
+        public int depth;
         public Vector3 visualOffset;
         public float visualScale;
 
         [Header("Jika Connectable (Jalan/Selokan)")]
-        // Urutan Array WAJIB: 
-        // 0:Standalone, 1:End, 2:Straight, 3:Corner, 4:T, 5:Cross
+        // Urutan Array WAJIB: 0:Standalone, 1:End, 2:Straight, 3:Corner, 4:T, 5:Cross
         public Mesh[] connectionMeshes;
         public float yOffset; // Offset tinggi (misal selokan agak turun)
     }

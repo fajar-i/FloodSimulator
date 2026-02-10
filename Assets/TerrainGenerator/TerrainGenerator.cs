@@ -73,7 +73,7 @@ public class TerrainGenerator : MonoBehaviour
                         cell.amount = 0;
 
                         // Tentukan Texture berdasarkan Biome
-                        if (biome == BiomeType.Plantation) cell.blockType = 2; // Rumput
+                        if (biome == BiomeType.Plantation) cell.blockType = 1; // Rumput
                         else if (biome == BiomeType.Urban) cell.blockType = 2; // Beton/Aspal
                         else if (biome == BiomeType.Industrial) cell.blockType = 3; // Tanah Kasar/Lumpur
                     }

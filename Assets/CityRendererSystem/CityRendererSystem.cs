@@ -1,19 +1,18 @@
 using System.Collections.Generic;
 using UnityEngine;
+// Class pembantu untuk menyimpan data batch
 
 public class CityRendererSystem : MonoBehaviour
 {
     private VoxelWorld world;
-    public Material cityMaterial;
     private BuildingRegistry buildingDatabase;
 
-    // Mapping ID -> Index Batch di List utama
-    // Jika Connectable, int ini menunjuk ke index mesh pertama (Standalone)
-    private Dictionary<byte, int> idToBatchIndex;
+    // Dictionary sekarang menyimpan RenderBatch, bukan index int lagi
+    private Dictionary<byte, List<RenderBatch>> idToBatches;
+    // Kenapa List<RenderBatch>? Karena 1 ID (misal Jalan) butuh 6 Batch (Lurus, Belok, dll)
 
-    // Penyimpanan Batch
-    private List<List<Matrix4x4>> batches;
-    private List<Mesh> batchMeshes;
+    // List utama untuk di-loop saat Update
+    private List<RenderBatch> allBatches;
 
     public void Initialize(VoxelWorld currentWorld, BuildingRegistry globalRegistry)
     {
@@ -24,6 +23,7 @@ public class CityRendererSystem : MonoBehaviour
 
     public void RebuildAllBatches()
     {
+
         if (world == null) return;
         InitializeBatches(); // Setup wadah batch berdasarkan Database terbaru
 
@@ -40,11 +40,11 @@ public class CityRendererSystem : MonoBehaviour
                 byte id = cell.blockType;
 
                 // Cek apakah ID ini terdaftar di sistem batch kita?
-                if (idToBatchIndex.ContainsKey(id))
+                if (idToBatches.ContainsKey(id))
                 {
                     // Ambil Datanya
                     var data = buildingDatabase.GetDataByID(id);
-                    int baseBatchIndex = idToBatchIndex[id];
+                    var batchList = idToBatches[id];
 
                     if (data.renderType == BuildingRegistry.RenderType.StaticProp)
                     {
@@ -53,7 +53,7 @@ public class CityRendererSystem : MonoBehaviour
                         Vector3 pos = new Vector3(x + 0.5f, y, z + 0.5f) + data.visualOffset;
                         Vector3 scale = Vector3.one * (data.visualScale == 0 ? 1 : data.visualScale);
 
-                        batches[baseBatchIndex].Add(Matrix4x4.TRS(pos, rot, scale));
+                        batchList[0].AddInstance(Matrix4x4.TRS(pos, rot, scale));
                     }
                     else if (data.renderType == BuildingRegistry.RenderType.Connectable)
                     {
@@ -66,65 +66,70 @@ public class CityRendererSystem : MonoBehaviour
 
                         // 3. Masukkan ke Batch yang tepat
                         // (baseBatchIndex + shapeIndex) karena kita alokasikan 6 slot berurutan
-                        int targetBatch = baseBatchIndex + shapeIndex;
 
                         Vector3 pos = new Vector3(x + 0.5f, y + data.yOffset, z + 0.5f);
 
                         // Fix rotasi tegak (Blender Z-up vs Unity Y-up) jika perlu
                         // rot = rot * Quaternion.Euler(-90, 0, 0); // Aktifkan jika model tidur
 
-                        batches[targetBatch].Add(Matrix4x4.TRS(pos, rot, Vector3.one));
+                        batchList[shapeIndex].AddInstance(Matrix4x4.TRS(pos, rot, Vector3.one));
                     }
                 }
             }
         }
     }
 
-    public void OnUpdate()
-    {
-        // Gambar semua batch yang sudah diisi
-        for (int i = 0; i < batches.Count; i++)
-        {
-            if (batches[i].Count > 0)
-                Graphics.DrawMeshInstanced(batchMeshes[i], 0, cityMaterial, batches[i]);
-        }
-    }
-
     // --- INISIALISASI PINTAR ---
     void InitializeBatches()
     {
-        idToBatchIndex = new Dictionary<byte, int>();
-        batches = new List<List<Matrix4x4>>();
-        batchMeshes = new List<Mesh>();
-        int counter = 0;
+        idToBatches = new Dictionary<byte, List<RenderBatch>>();
+        allBatches = new List<RenderBatch>();
 
         foreach (var data in buildingDatabase.buildings)
         {
+            List<RenderBatch> batchList = new List<RenderBatch>();
             if (data.renderType == BuildingRegistry.RenderType.StaticProp)
             {
                 // Alokasi 1 Batch
-                batches.Add(new List<Matrix4x4>());
-                batchMeshes.Add(data.mesh);
-                idToBatchIndex.Add(data.id, counter);
-                counter++;
+                var batch = new RenderBatch(data.mesh, data.material);
+                batchList.Add(batch);
+                allBatches.Add(batch);
             }
             else if (data.renderType == BuildingRegistry.RenderType.Connectable)
             {
-                // Alokasi 6 Batch Berurutan
-                // Urutan: 0=Standalone, 1=End, 2=Straight, 3=Corner, 4=T, 5=Cross
                 if (data.connectionMeshes == null || data.connectionMeshes.Length < 6)
                 {
                     Debug.LogError($"Error: Item {data.name} (Connectable) tidak punya 6 mesh lengkap!");
                     continue;
                 }
-
-                idToBatchIndex.Add(data.id, counter); // Catat index awal
-
+                // Buat 6 Batch (untuk 6 bentuk sambungan), semua pakai material yang sama
                 for (int i = 0; i < 6; i++)
                 {
-                    batches.Add(new List<Matrix4x4>());
-                    batchMeshes.Add(data.connectionMeshes[i]);
-                    counter++;
+                    var batch = new RenderBatch(data.connectionMeshes[i], data.material);
+                    batchList.Add(batch);
+                    allBatches.Add(batch);
+                }
+            }
+
+            idToBatches.Add(data.id, batchList);
+        }
+    }
+
+    public void OnUpdate()
+    {
+        foreach (var batch in allBatches)
+        {
+            // Loop setiap Chunk (potongan 1023)
+            foreach (var chunk in batch.chunks)
+            {
+                if (chunk.Count > 0)
+                {
+                    Graphics.DrawMeshInstanced(
+                        batch.mesh,
+                        0,
+                        batch.material,
+                        chunk // Kirim chunk yang aman (max 1023)
+                    );
                 }
             }
         }
@@ -176,7 +181,7 @@ public class CityRendererSystem : MonoBehaviour
     {
         if (!world.IsValidIndex(x, y, z)) return false;
         // Opsional: Cek y+1 / y-1 untuk jalan menanjak
-        return world.GetVoxel(x, y, z).blockType == type;
+        return world.GetVoxel(x, y, z).blockType == type || world.GetVoxel(x, y + 1, z).blockType == type || world.GetVoxel(x, y - 1, z).blockType == type;
     }
 
     int FindSurfaceY(int x, int z)

@@ -13,14 +13,111 @@ MonoBehaviour:
   m_Name: Global_Building_DB
   m_EditorClassIdentifier: Assembly-CSharp::BuildingRegistry
   buildings:
-  - name: 
-    id: 0
-    width: 0
-    depth: 0
+  - name: Road
+    id: 10
+    material: {fileID: 2100000, guid: 2f30e22b7c445d544b00238ddb41f54b, type: 2}
+    renderType: 1
     zone: 0
-    renderType: 0
     mesh: {fileID: 0}
+    width: 1
+    depth: 1
     visualOffset: {x: 0, y: 0, z: 0}
     visualScale: 0
-    connectionMeshes: []
+    connectionMeshes:
+    - {fileID: -4607033458518043087, guid: a4cc4412153fdc547a6cae1e8d5663e5, type: 3}
+    - {fileID: 5127084222306017612, guid: a4cc4412153fdc547a6cae1e8d5663e5, type: 3}
+    - {fileID: 5127084222306017612, guid: a4cc4412153fdc547a6cae1e8d5663e5, type: 3}
+    - {fileID: -8811636525838189291, guid: a4cc4412153fdc547a6cae1e8d5663e5, type: 3}
+    - {fileID: 1366335793150157294, guid: a4cc4412153fdc547a6cae1e8d5663e5, type: 3}
+    - {fileID: 1168332379921861741, guid: a4cc4412153fdc547a6cae1e8d5663e5, type: 3}
+    yOffset: 1
+  - name: River
+    id: 11
+    material: {fileID: 2100000, guid: 65e36df0b656d6a4191bc0c44bdaad8c, type: 2}
+    renderType: 1
+    zone: 0
+    mesh: {fileID: 0}
+    width: 1
+    depth: 1
+    visualOffset: {x: 0, y: 0, z: 0}
+    visualScale: 0
+    connectionMeshes:
+    - {fileID: 5562347940721832414, guid: a4cc4412153fdc547a6cae1e8d5663e5, type: 3}
+    - {fileID: 1068149485436994125, guid: a4cc4412153fdc547a6cae1e8d5663e5, type: 3}
+    - {fileID: 1068149485436994125, guid: a4cc4412153fdc547a6cae1e8d5663e5, type: 3}
+    - {fileID: -4189761295546991432, guid: a4cc4412153fdc547a6cae1e8d5663e5, type: 3}
+    - {fileID: -5704181638164806452, guid: a4cc4412153fdc547a6cae1e8d5663e5, type: 3}
+    - {fileID: -912586601669102693, guid: a4cc4412153fdc547a6cae1e8d5663e5, type: 3}
+    yOffset: 1
+  - name: House-a
+    id: 41
+    material: {fileID: 2100000, guid: 65e36df0b656d6a4191bc0c44bdaad8c, type: 2}
+    renderType: 0
+    zone: 0
+    mesh: {fileID: 1827515803117084162, guid: fe439ba7e5e784344a28378212116487, type: 3}
+    width: 3
+    depth: 3
+    visualOffset: {x: 1, y: 1, z: 1}
+    visualScale: 1
+    connectionMeshes:
+    - {fileID: 5562347940721832414, guid: 18374a910b49ec14eb7e3942423e8161, type: 3}
+    - {fileID: 3084269884103666813, guid: bfc2208137d998b47a9bd07a91c8ad26, type: 3}
+    - {fileID: 1068149485436994125, guid: 54c4499c250b7a4459a7a5f87f6784c9, type: 3}
+    - {fileID: -4189761295546991432, guid: 5f88a8d4e96ec104e90c510c79036c14, type: 3}
+    - {fileID: -5704181638164806452, guid: 7b49e914a2887f244962c53a0fd02d95, type: 3}
+    - {fileID: -912586601669102693, guid: 611ae6749be15c94a95a6420153a5dc6, type: 3}
+    yOffset: 0
+  - name: Industry-a
+    id: 50
+    material: {fileID: 2100000, guid: 65e36df0b656d6a4191bc0c44bdaad8c, type: 2}
+    renderType: 0
+    zone: 1
+    mesh: {fileID: 5434917319361848994, guid: fe439ba7e5e784344a28378212116487, type: 3}
+    width: 1
+    depth: 1
+    visualOffset: {x: 0, y: 0, z: 0}
+    visualScale: 1
+    connectionMeshes:
+    - {fileID: 5562347940721832414, guid: 18374a910b49ec14eb7e3942423e8161, type: 3}
+    - {fileID: 3084269884103666813, guid: bfc2208137d998b47a9bd07a91c8ad26, type: 3}
+    - {fileID: 1068149485436994125, guid: 54c4499c250b7a4459a7a5f87f6784c9, type: 3}
+    - {fileID: -4189761295546991432, guid: 5f88a8d4e96ec104e90c510c79036c14, type: 3}
+    - {fileID: -5704181638164806452, guid: 7b49e914a2887f244962c53a0fd02d95, type: 3}
+    - {fileID: -912586601669102693, guid: 611ae6749be15c94a95a6420153a5dc6, type: 3}
+    yOffset: 0
+  - name: lampu
+    id: 51
+    material: {fileID: 6445300257758347646, guid: a8261e0a82cd78f408d6a7273eb32c58, type: 3}
+    renderType: 0
+    zone: 1
+    mesh: {fileID: 4124698772235185501, guid: a8261e0a82cd78f408d6a7273eb32c58, type: 3}
+    width: 1
+    depth: 1
+    visualOffset: {x: 0, y: 0, z: 0}
+    visualScale: 1
+    connectionMeshes:
+    - {fileID: 5562347940721832414, guid: 18374a910b49ec14eb7e3942423e8161, type: 3}
+    - {fileID: 3084269884103666813, guid: bfc2208137d998b47a9bd07a91c8ad26, type: 3}
+    - {fileID: 1068149485436994125, guid: 54c4499c250b7a4459a7a5f87f6784c9, type: 3}
+    - {fileID: -4189761295546991432, guid: 5f88a8d4e96ec104e90c510c79036c14, type: 3}
+    - {fileID: -5704181638164806452, guid: 7b49e914a2887f244962c53a0fd02d95, type: 3}
+    - {fileID: -912586601669102693, guid: 611ae6749be15c94a95a6420153a5dc6, type: 3}
+    yOffset: 0
+  - name: pohon
+    id: 60
+    material: {fileID: -6538903991835684241, guid: 0bae7de8699026c43b5d563ced695000, type: 3}
+    renderType: 0
+    zone: 3
+    mesh: {fileID: 7109352391128080873, guid: ed9da0322874f544582c9071b93c0433, type: 3}
+    width: 1
+    depth: 1
+    visualOffset: {x: 0, y: 0, z: 0}
+    visualScale: 1
+    connectionMeshes:
+    - {fileID: 5562347940721832414, guid: 18374a910b49ec14eb7e3942423e8161, type: 3}
+    - {fileID: 3084269884103666813, guid: bfc2208137d998b47a9bd07a91c8ad26, type: 3}
+    - {fileID: 1068149485436994125, guid: 54c4499c250b7a4459a7a5f87f6784c9, type: 3}
+    - {fileID: -4189761295546991432, guid: 5f88a8d4e96ec104e90c510c79036c14, type: 3}
+    - {fileID: -5704181638164806452, guid: 7b49e914a2887f244962c53a0fd02d95, type: 3}
+    - {fileID: -912586601669102693, guid: 611ae6749be15c94a95a6420153a5dc6, type: 3}
     yOffset: 0

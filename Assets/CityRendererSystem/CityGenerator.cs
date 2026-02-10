@@ -13,7 +13,7 @@ public class CityGenerator : MonoBehaviour
     // ID BLOK
     private const byte ID_ROAD = 10;
     private const byte ID_BRIDGE = 12; // Jika kena sungai
-    private const byte ID_ZONE_RESIDENTIAL = 30;
+    private const byte ID_ZONE_RESIDENTIAL = 40;
     private const byte ID_RIVER = 8; // ID Sungai alami (asumsi)
     public void GenerateCityLayout(VoxelWorld connectedWorld)
     {

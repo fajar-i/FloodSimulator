@@ -448,8 +448,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityGenerator
   mainRoadInterval: 32
-  localRoadInterval: 100
-  cityPadding: 10
+  localRoadInterval: 10
+  cityPadding: 5
 --- !u!1 &596853720
 GameObject:
   m_ObjectHideFlags: 0
@@ -544,6 +544,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 323ce24586edb9041ad41a11455e4f77, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityAutoBuilder
+  roadID: 10
+  residentialZoneID: 30
+  industrialZoneID: 31
+  treeID: 60
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -886,9 +890,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bf1223d2e55732459f3374d0976b5d7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VoxelWorld
-  worldWidth: 64
+  worldWidth: 256
   worldHeight: 22
-  worldDepth: 64
+  worldDepth: 256
   waterMaterial: {fileID: 2100000, guid: bb394fd5cedd9804fbfb453d11d25dc1, type: 2}
 --- !u!4 &1636642547
 Transform:

@@ -19,7 +19,6 @@ public class GameManager : MonoBehaviour
     public WaterSimulationSystem waterSystem; // Logic
     // public ChunkedWaterManager disasterController;
     // public EconomyManager economyManager;
-
     public GameState CurrentState { get; private set; }
 
     void Start()
@@ -97,6 +96,9 @@ public class GameManager : MonoBehaviour
         {
             waterSystem.SystemUpdate(world);
         }
-        cityGameManager.OnUpdate();
+        if (CurrentState != GameState.Planning)
+        {
+            cityGameManager.OnUpdate(); 
+        }
     }
 }
