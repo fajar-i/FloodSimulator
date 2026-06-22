@@ -35,6 +35,20 @@ public class VoxelWorld : MonoBehaviour
 
         SetupChunksAndBuffers();
     }
+    public void ClearWorld()
+    {
+        if (!ActiveGrid.IsCreated || !NextGrid.IsCreated) return;
+
+        int totalVoxels = worldWidth * worldHeight * worldDepth;
+        VoxelCell emptyCell = new VoxelCell(); // Default values (amount=0, isSolid=false, blockType=0, zoneType=EMPTY, rotation=0)
+        for (int i = 0; i < totalVoxels; i++)
+        {
+            ActiveGrid[i] = emptyCell;
+            NextGrid[i] = emptyCell;
+        }
+
+        UpdateAllChunks();
+    }
     void SetupChunksAndBuffers()
     {
         // 2. Hitung jumlah chunk
@@ -163,6 +177,14 @@ public class VoxelWorld : MonoBehaviour
 
     // Panggil ini SETELAH loop generate selesai
 
+    void UpdateChunkSafe(int cx, int cy, int cz)
+    {
+        if (cx >= 0 && cx < chunksX && cy >= 0 && cy < chunksY && cz >= 0 && cz < chunksZ)
+        {
+            UpdateSingleChunk(cx, cy, cz, ActiveGrid);
+        }
+    }
+
     public void MarkChunkDirty(int x, int y, int z)
     {
         // Cek batas dunia dulu agar tidak error
@@ -178,7 +200,14 @@ public class VoxelWorld : MonoBehaviour
         // OPTIMASI TAMBAHAN:
         // Jika kita mengubah blok di perbatasan chunk (misal x=15),
         // chunk sebelah (x=16) juga perlu update karena Face Culling tetangga berubah.
-        // Tapi untuk sekarang, kode di atas sudah cukup agar tekstur berubah.
+        if (x % CHUNK_SIZE == 0 && cx > 0) UpdateChunkSafe(cx - 1, cy, cz);
+        if (x % CHUNK_SIZE == CHUNK_SIZE - 1 && cx < chunksX - 1) UpdateChunkSafe(cx + 1, cy, cz);
+
+        if (y % CHUNK_SIZE == 0 && cy > 0) UpdateChunkSafe(cx, cy - 1, cz);
+        if (y % CHUNK_SIZE == CHUNK_SIZE - 1 && cy < chunksY - 1) UpdateChunkSafe(cx, cy + 1, cz);
+
+        if (z % CHUNK_SIZE == 0 && cz > 0) UpdateChunkSafe(cx, cy, cz - 1);
+        if (z % CHUNK_SIZE == CHUNK_SIZE - 1 && cz < chunksZ - 1) UpdateChunkSafe(cx, cy, cz + 1);
     }
 
     public void SwapBuffer()

@@ -24,18 +24,18 @@ public class CityAutoBuilder : MonoBehaviour
 
         // Ambil data dari Registry
         var industries = registry.buildings
-                            .Where(b => b.zone == ZoneType.Industrial)
+                            .Where(b => b.zone == ZoneType.INDUSTRIAL)
                             .OrderByDescending(b => b.width * b.depth).ToList();
         
         var houses = registry.buildings
-                            .Where(b => b.zone == ZoneType.Residential)
+                            .Where(b => b.zone == ZoneType.RESIDENTIAL)
                             .OrderByDescending(b => b.width * b.depth).ToList();
 
         // Pass 1: Industri (Butuh lahan rata yang luas)
-        PlaceSmartBuildings(industries, 31); // ID Zone Industrial
+        PlaceSmartBuildings(industries, VoxelID.ZONE_INDUSTRIAL); // ID Zone Industrial
 
         // Pass 2: Perumahan
-        PlaceSmartBuildings(houses, 40); // ID Zone Residential
+        PlaceSmartBuildings(houses, VoxelID.ZONE_RESIDENTIAL); // ID Zone Residential
 
         // Update visual chunk di akhir (Manager yang panggil, tapi kalau mau tes bisa di sini)
         world.UpdateAllChunks();
@@ -117,8 +117,8 @@ public class CityAutoBuilder : MonoBehaviour
             int y = FindSurfaceY(cx, cz);
             if (y == -1) continue;
 
-            // Asumsi ID Jalan = 10
-            if (world.GetVoxel(cx, y, cz).blockType == 10)
+            // Asumsi ID Jalan
+            if (world.GetVoxel(cx, y, cz).blockType == VoxelID.ROAD)
             {
                 foundY = y; // KETEMU! Ini ketinggian jalan.
                 return true;
@@ -143,9 +143,9 @@ public class CityAutoBuilder : MonoBehaviour
                 if (y == -1 ) return false; // Jurang
 
                 // Cek apakah area ini sudah ada bangunan lain?
-                // Kita hanya boleh meratakan Zona (30/31) atau Tanah (1)
+                // Kita hanya boleh meratakan Zona atau Tanah
                 byte type = world.GetVoxel(x, y, z).blockType;
-                if (type != 40 && type != 31 && type != 1) return false; 
+                if (type != VoxelID.ZONE_RESIDENTIAL && type != VoxelID.ZONE_INDUSTRIAL && type != VoxelID.GRASS) return false; 
 
                 if (y < minH) minH = y;
                 if (y > maxH) maxH = y;
@@ -175,7 +175,7 @@ public class CityAutoBuilder : MonoBehaviour
                 {
                     for (int k = currentY; k > floorY; k--)
                     {
-                        VoxelCell air = new VoxelCell { blockType = 0, isSolid = false }; // 0 = Air
+                        VoxelCell air = new VoxelCell { blockType = VoxelID.WATER, isSolid = false }; // Air = 0
                         world.SetVoxelSilent(x, k, z, air);
                     }
                 }
@@ -192,15 +192,15 @@ public class CityAutoBuilder : MonoBehaviour
 
                     // Isi dengan Beton/Tanah agar rumah tidak melayang
                     VoxelCell foundation = existing;
-                    foundation.blockType = 1; // 1 = Tanah/Beton Pondasi
+                    foundation.blockType = VoxelID.GRASS; // Pondasi Tanah
                     foundation.isSolid = true;
                     world.SetVoxelSilent(x, k, z, foundation);
                 }
 
                 // C. TANDAI AREA SEBAGAI "TERPAKAI" (Filler)
-                // Set blok di floorY menjadi ID Filler (255) agar tidak ditimpa bangunan lain
+                // Set blok di floorY menjadi ID Filler agar tidak ditimpa bangunan lain
                 VoxelCell filler = world.GetVoxel(x, floorY, z);
-                filler.blockType = 1; 
+                filler.blockType = VoxelID.GRASS; 
                 world.SetVoxelSilent(x, floorY, z, filler);
             }
         }

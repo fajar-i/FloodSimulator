@@ -73,20 +73,25 @@ public class TerrainGenerator : MonoBehaviour
                         cell.amount = 0;
 
                         // Tentukan Texture berdasarkan Biome
-                        if (biome == BiomeType.Plantation) cell.blockType = 1; // Rumput
-                        else if (biome == BiomeType.Urban) cell.blockType = 2; // Beton/Aspal
-                        else if (biome == BiomeType.Industrial) cell.blockType = 3; // Tanah Kasar/Lumpur
+                        byte blockType = VoxelID.GRASS;
+                        if (biome == BiomeType.Plantation) blockType = VoxelID.GRASS; // Rumput
+                        else if (biome == BiomeType.Urban) blockType = VoxelID.CONCRETE; // Beton/Aspal
+                        else if (biome == BiomeType.Industrial) blockType = VoxelID.ROUGH_GROUND; // Tanah Kasar/Lumpur
+
+                        VoxelHelper.InitializeHydrology(ref cell, blockType);
                     }
                     else if (isRiver && y <= groundBaseHeight - 1) // AIR
                     {
                         cell.isSolid = false;
                         cell.amount = 1.0f;
-                        cell.blockType = 0; // Air
+                        VoxelHelper.InitializeHydrology(ref cell, VoxelID.WATER); // Air
                     }
                     else // UDARA
                     {
                         cell.isSolid = false;
                         cell.amount = 0;
+                        cell.blockType = 0;
+                        cell.zoneType = ZoneType.EMPTY;
                     }
 
                     voxelWorld.SetVoxelSilent(x, y, z, cell);

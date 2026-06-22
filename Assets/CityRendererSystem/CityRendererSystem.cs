@@ -23,9 +23,21 @@ public class CityRendererSystem : MonoBehaviour
 
     public void RebuildAllBatches()
     {
-
         if (world == null) return;
-        InitializeBatches(); // Setup wadah batch berdasarkan Database terbaru
+
+        // Setup batches if they are not yet initialized or are empty
+        if (allBatches == null || allBatches.Count == 0 || idToBatches == null || idToBatches.Count == 0)
+        {
+            InitializeBatches();
+        }
+        else
+        {
+            // Clear existing batches rather than re-allocating new objects and lists
+            foreach (var batch in allBatches)
+            {
+                batch.Clear();
+            }
+        }
 
         Debug.Log("Renderer: Scanning World...");
 

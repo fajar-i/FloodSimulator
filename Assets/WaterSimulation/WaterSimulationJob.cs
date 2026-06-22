@@ -72,10 +72,10 @@ public struct WaterPullJob : IJobParallelFor
         // 2. LOGIKA HORIZONTAL (CA-DUSRM ADAPTED)
         // ==========================================
 
-        // Tentukan faktor kekasaran SAYA (Sender Roughness)
-        // BlockType 2 (Beton) = Licin (1.0), BlockType 1 (Tanah) = Kasar (0.3)
-        //
-        float myRoughness = (myState.blockType == 2) ? 1.0f : 0.3f;
+        // Tentukan faktor kekasaran SAYA (Sender Roughness) secara dinamis
+        // flowFriction = 0.0f (licin total/cepat) -> myRoughness = 1.0f
+        // flowFriction = 0.7f (kasar/tanah) -> myRoughness = 0.3f
+        float myRoughness = 1.0f - myState.flowFriction;
 
         int4 dirX = new int4(-1, 1, 0, 0);
         int4 dirZ = new int4(0, 0, -1, 1);
@@ -123,7 +123,7 @@ public struct WaterPullJob : IJobParallelFor
                         {
                             if (neighbor.amount > DEPRESSION_STORAGE)
                             {
-                                float neighborRoughness = (neighbor.blockType == 2) ? 1.0f : 0.3f;
+                                float neighborRoughness = 1.0f - neighbor.flowFriction;
 
                                 // 1. Hitung keinginan aliran (Note: diff negatif, jadi flow negatif)
                                 float desiredFlow = (diff * flowSpeed * neighborRoughness) * 0.25f;
@@ -148,6 +148,14 @@ public struct WaterPullJob : IJobParallelFor
         // ==========================================
 
         float finalAmount = currentAmount + change;
+
+        // Penyerapan air (absorptionRate) per tick
+        if (finalAmount > 0.0f && myState.absorptionRate > 0.0f)
+        {
+            finalAmount -= myState.absorptionRate * flowSpeed;
+            if (finalAmount < 0.0f) finalAmount = 0.0f;
+        }
+
         finalAmount = math.saturate(finalAmount);
 
         VoxelCell result = myState;

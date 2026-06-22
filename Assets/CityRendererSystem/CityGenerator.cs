@@ -11,10 +11,7 @@ public class CityGenerator : MonoBehaviour
     public int cityPadding = 5; // Jarak aman dari pinggir peta
 
     // ID BLOK
-    private const byte ID_ROAD = 10;
-    private const byte ID_BRIDGE = 12; // Jika kena sungai
-    private const byte ID_ZONE_RESIDENTIAL = 40;
-    private const byte ID_RIVER = 8; // ID Sungai alami (asumsi)
+    // Standardized IDs are referenced directly from VoxelID static class
     public void GenerateCityLayout(VoxelWorld connectedWorld)
     {
         world = connectedWorld;
@@ -75,14 +72,14 @@ public class CityGenerator : MonoBehaviour
             VoxelCell cell = world.GetVoxel(x, y, z);
 
             // --- LOGIKA JEMBATAN VS JALAN ---
-            if (cell.blockType == ID_RIVER) // Jika menabrak sungai
+            if (cell.blockType == VoxelID.WATER) // Jika menabrak air / sungai
             {
-                cell.blockType = ID_BRIDGE;
+                cell.blockType = VoxelID.BRIDGE;
                 // Opsional: Naikkan y+1 agar jembatan di atas air
             }
             else
             {
-                cell.blockType = ID_ROAD;
+                cell.blockType = VoxelID.ROAD;
             }
 
             // Simpan perubahan
@@ -105,11 +102,11 @@ public class CityGenerator : MonoBehaviour
 
                 VoxelCell cell = world.GetVoxel(x, y, z);
 
-                // Jika TANAH BIASA (ID 1) dan bukan Jalan/Sungai/Jembatan
+                // Jika TANAH BIASA (VoxelID.GRASS = 1) dan bukan Jalan/Sungai/Jembatan
                 // Ubah menjadi Zona Perumahan (30)
-                if (cell.blockType == 1)
+                if (cell.blockType == VoxelID.GRASS)
                 {
-                    cell.blockType = ID_ZONE_RESIDENTIAL;
+                    cell.blockType = VoxelID.ZONE_RESIDENTIAL;
                     world.SetVoxelSilent(x, y, z, cell);
                 }
             }

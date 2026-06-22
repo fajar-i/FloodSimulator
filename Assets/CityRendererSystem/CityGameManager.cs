@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.Collections;
 
-public enum ZoneType { Residential, Industrial, Commercial, Decoration }
 public class CityGameManager : MonoBehaviour
 {
     [Header("Core Database")]
@@ -16,18 +15,23 @@ public class CityGameManager : MonoBehaviour
     [Header("Simulation Config")]
     public bool autoBuildOnStart = true;
 
+    private bool isBuilding = false;
+    private Coroutine buildCoroutine;
+
     public void Initialize()
     {
+        if (isBuilding)
+        {
+            Debug.LogWarning("[CityGameManager] Build already in progress. Ignoring Initialize call.");
+            return;
+        }
+
         // Pastikan renderer tahu siapa bosnya (World)
         CityAutoBuilder.Initialize(world, globalRegistry);
         cityRenderer.Initialize(world, globalRegistry);
 
         // 2. MULAI KERJA
-        StartCoroutine(BuildCityRoutine());
-        if (autoBuildOnStart)
-        {
-            StartCoroutine(BuildCityRoutine());
-        }
+        buildCoroutine = StartCoroutine(BuildCityRoutine());
     }
     public void OnUpdate()
     {
@@ -39,6 +43,7 @@ public class CityGameManager : MonoBehaviour
     // dan kita bisa kasih jeda antar fase biar terlihat keren
     IEnumerator BuildCityRoutine()
     {
+        isBuilding = true;
         Debug.Log("--- PHASE 1: PREPARING TERRAIN ---");
         // world.GenerateTerrain(); // Jika ada script terrain gen terpisah
         yield return null; // Tunggu 1 frame
@@ -57,12 +62,21 @@ public class CityGameManager : MonoBehaviour
         cityRenderer.RebuildAllBatches(); // Setelah semua bangunan ditempatkan, modelnya di render
 
         Debug.Log("--- CITY BUILT SUCCESSFULLY ---");
+        isBuilding = false;
     }
 
     // Fungsi untuk tombol UI "Rebuild City"
     public void RebuildCity()
     {
-        // world.ClearWorld(); // Asumsi ada fungsi reset
-        StartCoroutine(BuildCityRoutine());
+        if (buildCoroutine != null)
+        {
+            StopCoroutine(buildCoroutine);
+        }
+        isBuilding = false;
+        if (world != null)
+        {
+            world.ClearWorld();
+        }
+        buildCoroutine = StartCoroutine(BuildCityRoutine());
     }
 }

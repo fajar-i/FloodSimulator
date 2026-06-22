@@ -44,7 +44,7 @@ public class WaterSimulationSystem : MonoBehaviour
                 if (idx >= 0 && idx < currentGrid.Length)
                 {
                     VoxelCell c = currentGrid[idx];
-                    c.amount = 1.0f; c.isSolid = false; c.blockType = 0; // Tipe Air
+                    c.amount = 1.0f; c.isSolid = false; c.blockType = VoxelID.WATER; // Tipe Air
                     currentGrid[idx] = c;
                 }
             }
@@ -106,7 +106,7 @@ public class WaterSimulationSystem : MonoBehaviour
                     if (!c.isSolid && c.amount < 1.0f)
                     {
                         c.amount = 1.0f;
-                        c.blockType = 0; // Pastikan tipenya Air
+                        c.blockType = VoxelID.WATER; // Pastikan tipenya Air
                         grid[idx] = c;
                     }
                 }

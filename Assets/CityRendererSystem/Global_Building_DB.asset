@@ -53,7 +53,7 @@ MonoBehaviour:
     id: 41
     material: {fileID: 2100000, guid: 65e36df0b656d6a4191bc0c44bdaad8c, type: 2}
     renderType: 0
-    zone: 0
+    zone: 1
     mesh: {fileID: 1827515803117084162, guid: fe439ba7e5e784344a28378212116487, type: 3}
     width: 3
     depth: 3
@@ -71,7 +71,7 @@ MonoBehaviour:
     id: 50
     material: {fileID: 2100000, guid: 65e36df0b656d6a4191bc0c44bdaad8c, type: 2}
     renderType: 0
-    zone: 1
+    zone: 2
     mesh: {fileID: 5434917319361848994, guid: fe439ba7e5e784344a28378212116487, type: 3}
     width: 1
     depth: 1
@@ -89,7 +89,7 @@ MonoBehaviour:
     id: 51
     material: {fileID: 6445300257758347646, guid: a8261e0a82cd78f408d6a7273eb32c58, type: 3}
     renderType: 0
-    zone: 1
+    zone: 2
     mesh: {fileID: 4124698772235185501, guid: a8261e0a82cd78f408d6a7273eb32c58, type: 3}
     width: 1
     depth: 1
@@ -107,7 +107,7 @@ MonoBehaviour:
     id: 60
     material: {fileID: -6538903991835684241, guid: 0bae7de8699026c43b5d563ced695000, type: 3}
     renderType: 0
-    zone: 3
+    zone: 0
     mesh: {fileID: 7109352391128080873, guid: ed9da0322874f544582c9071b93c0433, type: 3}
     width: 1
     depth: 1

@@ -26,12 +26,12 @@ public class ZoneController : MonoBehaviour
         world = voxelWorld;
 
         // --- INPUT PILIH ZONA ---
-        // 1 = Selokan (ID 11), 2 = Jalan (ID 10) - Contoh saja
-        if (Keyboard.current.digit0Key.wasPressedThisFrame) selectedZoneID = 0; // Air(Water) = 0
-        if (Keyboard.current.digit1Key.wasPressedThisFrame) selectedZoneID = 1; // tanah = 1
-        if (Keyboard.current.digit2Key.wasPressedThisFrame) selectedZoneID = 2; // beton = 2
-        if (Keyboard.current.digit3Key.wasPressedThisFrame) selectedZoneID = 3; // Industri = 3
-        // if (Keyboard.current.digit4Key.wasPressedThisFrame) selectedZoneID = 11; // Selokan / perairan
+        if (Keyboard.current.digit0Key.wasPressedThisFrame) selectedZoneID = VoxelID.WATER;             // Air = 0
+        if (Keyboard.current.digit1Key.wasPressedThisFrame) selectedZoneID = VoxelID.GRASS;             // Rumput / Tanah = 1
+        if (Keyboard.current.digit2Key.wasPressedThisFrame) selectedZoneID = VoxelID.CONCRETE;          // Beton = 2
+        if (Keyboard.current.digit3Key.wasPressedThisFrame) selectedZoneID = VoxelID.ZONE_RESIDENTIAL; // Zona Perumahan = 30
+        if (Keyboard.current.digit4Key.wasPressedThisFrame) selectedZoneID = VoxelID.ZONE_INDUSTRIAL;  // Zona Industri = 31
+        if (Keyboard.current.digit5Key.wasPressedThisFrame) selectedZoneID = VoxelID.ZONE_AGRICULTURAL;  // Zona Pertanian = 32
 
         // --- LOGIKA RAYCAST ---
         var cursorposition = Mouse.current.position.ReadValue();
@@ -62,17 +62,28 @@ public class ZoneController : MonoBehaviour
 
     public void finish()
     {
-        int i = 0;
-        foreach (VoxelCell cell in world.ActiveGrid)
+        if (world == null) return;
+
+        int totalVoxels = world.worldWidth * world.worldHeight * world.worldDepth;
+        bool changed = false;
+
+        for (int i = 0; i < totalVoxels; i++)
         {
-            if (cell.blockType == 0)//if air (water)
+            VoxelCell cell = world.ActiveGrid[i];
+            if (cell.blockType == 0 && cell.isSolid) // Jika tipe air tapi masih padat (solid)
             {
                 VoxelCell newcell = cell;
                 newcell.isSolid = false;
                 world.ActiveGrid[i] = newcell;
+                world.NextGrid[i] = newcell;
+                changed = true;
             }
+        }
 
-            i++;
+        if (changed)
+        {
+            Debug.Log("[ZoneController] Water solids unlocked. Rebuilding all meshes...");
+            world.UpdateAllChunks();
         }
     }
 
@@ -80,9 +91,9 @@ public class ZoneController : MonoBehaviour
     {
         if (world == null) return;
 
-        for (int x = brushSize; x <= brushSize; x++)
+        for (int x = -brushSize; x <= brushSize; x++)
         {
-            for (int z = brushSize; z <= brushSize; z++)
+            for (int z = -brushSize; z <= brushSize; z++)
             {
                 int paintX = centerX + x;
                 int paintZ = centerZ + z;
@@ -92,23 +103,23 @@ public class ZoneController : MonoBehaviour
                 if (surfaceY != -1)
                 {
                     // Logic Brush/Eraser
-                    byte newType = (currentTool == PaintTool.Brush) ? selectedZoneID : (byte)1; // 1 = Tanah
+                    byte newType = (currentTool == PaintTool.Brush) ? selectedZoneID : VoxelID.GRASS; // Default = Rumput
 
                     VoxelCell currentCell = world.GetVoxel(paintX, surfaceY, paintZ);
 
                     if (currentCell.blockType != newType)
                     {
-                        if (newType == 0) currentCell.amount = 1.0f;
                         // Logic Budget sederhana
                         if (currentTool == PaintTool.Brush && currentBudget >= costPerBlock)
                         {
                             currentBudget -= costPerBlock;
-                            currentCell.blockType = newType;
+                            VoxelHelper.InitializeHydrology(ref currentCell, newType);
+                            if (newType == VoxelID.WATER) currentCell.amount = 1.0f;
                             world.SetVoxel(paintX, surfaceY, paintZ, currentCell);
                         }
                         else if (currentTool == PaintTool.Eraser)
                         {
-                            currentCell.blockType = newType;
+                            VoxelHelper.InitializeHydrology(ref currentCell, newType);
                             world.SetVoxel(paintX, surfaceY, paintZ, currentCell);
                         }
                     }
