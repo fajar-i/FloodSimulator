@@ -1,0 +1,28 @@
+# Acquire Unity Activation File (SEMENTARA)
+# File ini hanya dipakai SEKALI untuk mendapatkan file aktivasi (.alf)
+# yang dibutuhkan lisensi Unity Personal. Setelah Secret UNITY_LICENSE
+# berhasil di-set, HAPUS file ini dari repo.
+#
+# Cara menjalankan: buka tab "Actions" di GitHub -> pilih workflow ini
+# -> klik "Run workflow". Tidak butuh Secret apa pun untuk langkah ini.
+
+name: Acquire Unity Activation File
+
+on:
+  workflow_dispatch: {} # hanya jalan kalau ditekan manual
+
+jobs:
+  activation:
+    name: Request manual activation file
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request manual activation file
+        id: getManualLicenseFile
+        uses: game-ci/unity-request-activation-file@v2
+
+      # Hasilnya (.alf) disimpan sebagai artifact yang bisa kamu unduh
+      - name: Upload activation file
+        uses: actions/upload-artifact@v4
+        with:
+          name: Manual Activation File
+          path: ${{ steps.getManualLicenseFile.outputs.filePath }}

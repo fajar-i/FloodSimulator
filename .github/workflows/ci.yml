@@ -1,0 +1,53 @@
+# CI - Verifikasi Build
+# Tujuan: setiap kali ada push / Pull Request ke main atau develop,
+# GitHub otomatis mencoba mem-build project. Kalau ada kode yang error
+# (gagal kompilasi), pipeline ini akan MERAH dan kita tahu sebelum demo.
+
+name: CI - Build Verification
+
+# KAPAN workflow ini jalan
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build:
+    name: Build StandaloneWindows64
+    runs-on: ubuntu-latest # server gratis dari GitHub (Linux)
+
+    steps:
+      # 1. Ambil kode dari repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true # jaga-jaga kalau ada asset besar via Git LFS
+
+      # 2. Cache folder Library biar build ke-2 dst jauh lebih cepat.
+      #    Library = hasil import asset Unity; kalau tidak di-cache,
+      #    Unity import ulang semuanya tiap kali (lambat).
+      - name: Cache Library folder
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      # 3. Build pakai GameCI. Versi Unity dideteksi otomatis dari
+      #    ProjectSettings/ProjectVersion.txt (6000.4.1f1).
+      #    UNITY_LICENSE diambil dari GitHub Secret (di-set oleh admin repo).
+      - name: Build project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          targetPlatform: StandaloneWindows64
+
+      # 4. (Opsional) simpan hasil build sebagai artifact yang bisa diunduh
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build-StandaloneWindows64
+          path: build
