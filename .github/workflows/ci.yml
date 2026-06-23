@@ -37,11 +37,14 @@ jobs:
 
       # 3. Build pakai GameCI. Versi Unity dideteksi otomatis dari
       #    ProjectSettings/ProjectVersion.txt (6000.4.1f1).
-      #    UNITY_LICENSE diambil dari GitHub Secret (di-set oleh admin repo).
+      #    3 Secret di bawah di-set oleh admin repo (Fajar). Ketiganya
+      #    WAJIB berasal dari satu akun Unity yang sama.
       - name: Build project
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: StandaloneWindows64
 
