@@ -9,7 +9,11 @@
 name: Acquire Unity Activation File
 
 on:
-  workflow_dispatch: {} # hanya jalan kalau ditekan manual
+  workflow_dispatch: {} # tombol manual (hanya muncul kalau file ada di branch default/main)
+  # SEMENTARA: biar workflow ini langsung jalan saat push ke branch setup CI,
+  # tanpa harus sudah di-merge ke main. HAPUS blok 'push' ini setelah dapat .alf.
+  push:
+    branches: [chore/setup-ci]
 
 jobs:
   activation:
