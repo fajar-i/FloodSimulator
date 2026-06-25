@@ -3,14 +3,17 @@ using UnityEngine.InputSystem;
 
 public class ZoneController : MonoBehaviour
 {
-    [SerializeField] private int currentBudget = 1000000000;
     [SerializeField] private int brushSize = 1; // Default 0 (1 blok)
     [SerializeField] private int costPerBlock = 1;
+
+    [Header("Referensi Subsistem")]
+    [Tooltip("Sumber kebenaran anggaran kota. Wajib di-assign di Inspector.")]
+    [SerializeField] private EconomyManager economyManager;
 
     // Referensi ke Database
     private VoxelWorld world;
 
-    public enum PaintTool { Brush, Eraser }
+    public enum PaintTool { Brush, Eraser, None }
     public PaintTool currentTool;
 
     // ID untuk Selokan (Misal kita sepakati ID 11 adalah Selokan)
@@ -58,6 +61,20 @@ public class ZoneController : MonoBehaviour
         {
             isHittingTerrain = false;
         }
+    }
+
+    // Dipanggil oleh tombol UI (BrushButton) untuk mengganti zona aktif.
+    // Menggantikan peran tombol digit 0-5 di SystemUpdate.
+    public void SetActiveZone(byte id)
+    {
+        selectedZoneID = id;
+        currentTool = PaintTool.Brush;
+    }
+
+    // Mode kursor: tidak ada brush, melukis dinonaktifkan (state awal).
+    public void SetCursorMode()
+    {
+        currentTool = PaintTool.None;
     }
 
     public void finish()
@@ -109,13 +126,17 @@ public class ZoneController : MonoBehaviour
 
                     if (currentCell.blockType != newType)
                     {
-                        // Logic Budget sederhana
-                        if (currentTool == PaintTool.Brush && currentBudget >= costPerBlock)
+                        if (currentTool == PaintTool.Brush)
                         {
-                            currentBudget -= costPerBlock;
-                            VoxelHelper.InitializeHydrology(ref currentCell, newType);
-                            if (newType == VoxelID.WATER) currentCell.amount = 1.0f;
-                            world.SetVoxel(paintX, surfaceY, paintZ, currentCell);
+                            // Minta bayar ke EconomyManager. TrySpend mengurangi anggaran
+                            // HANYA jika dana cukup, lalu return true. Kalau tidak cukup,
+                            // anggaran tak berubah dan blok tidak dilukis.
+                            if (economyManager != null && economyManager.TrySpend(costPerBlock))
+                            {
+                                VoxelHelper.InitializeHydrology(ref currentCell, newType);
+                                if (newType == VoxelID.WATER) currentCell.amount = 1.0f;
+                                world.SetVoxel(paintX, surfaceY, paintZ, currentCell);
+                            }
                         }
                         else if (currentTool == PaintTool.Eraser)
                         {
