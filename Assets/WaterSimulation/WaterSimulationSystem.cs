@@ -19,6 +19,19 @@ public class WaterSimulationSystem : MonoBehaviour
     private float floodTimer = 0f;
     private float tickTimer = 0f;
 
+    [Header("Hujan (dipicu Cuaca)")]
+    [Tooltip("Sumber cuaca. Hujan/Badai akan menurunkan air dari atas secara bertahap.")]
+    [SerializeField] private EconomyManager economy;
+    [Tooltip("Jeda antar tetesan hujan (detik). Makin kecil makin sering.")]
+    public float rainInterval = 0.2f;
+    [Tooltip("Jumlah kolom yang ditetesi tiap tick saat cuaca Hujan.")]
+    public int hujanDrops = 6;
+    [Tooltip("Jumlah kolom yang ditetesi tiap tick saat cuaca Badai.")]
+    public int badaiDrops = 18;
+    [Tooltip("Banyak air per tetes (0-1). Air menumpuk pelan sampai 1.0 per sel.")]
+    public float rainAmount = 0.25f;
+    private float rainTimer = 0f;
+
 
     private VoxelWorld world;
 
@@ -59,6 +72,9 @@ public class WaterSimulationSystem : MonoBehaviour
             }
         }
 
+        // Hujan otomatis: air turun dari atas & menggenang, intensitas ikut cuaca.
+        UpdateRain();
+
         //logika fisika air
         tickTimer += Time.deltaTime;
         if (tickTimer >= simulationDelay)
@@ -87,6 +103,53 @@ public class WaterSimulationSystem : MonoBehaviour
         job.Schedule(read.Length, 64).Complete();
         world.SwapBuffer();
     }
+    // Hujan dari atas: tiap tick, sejumlah kolom acak ditetesi air tepat di atas
+    // permukaannya (terrain/air teratas). CA lalu mengalirkannya turun & menyamping,
+    // sehingga air menggenang di cekungan dan level naik PERLAHAN (bukan sesaat).
+    void UpdateRain()
+    {
+        if (economy == null) return;
+
+        int drops;
+        switch (economy.Weather)
+        {
+            case EconomyManager.WeatherType.Hujan: drops = hujanDrops; break;
+            case EconomyManager.WeatherType.Badai: drops = badaiDrops; break;
+            default: rainTimer = 0f; return; // Cerah: tidak hujan
+        }
+
+        rainTimer += Time.deltaTime;
+        if (rainTimer < rainInterval) return;
+        rainTimer = 0f;
+
+        var grid = world.ActiveGrid;
+        int w = world.worldWidth, h = world.worldHeight, d = world.worldDepth;
+
+        for (int n = 0; n < drops; n++)
+        {
+            int x = UnityEngine.Random.Range(0, w);
+            int z = UnityEngine.Random.Range(0, d);
+
+            // Cari permukaan: y tertinggi yang sudah terisi (solid / sudah ada air).
+            int surfaceY = 0;
+            for (int y = 0; y < h; y++)
+            {
+                VoxelCell cc = grid[x + w * (y + h * z)];
+                if (cc.isSolid || cc.amount > 0.1f) surfaceY = y + 1;
+            }
+            if (surfaceY >= h) surfaceY = h - 1; // sudah penuh sampai atas
+
+            int idx = x + w * (surfaceY + h * z);
+            VoxelCell c = grid[idx];
+            if (!c.isSolid)
+            {
+                c.amount = Mathf.Min(1.0f, c.amount + rainAmount);
+                c.blockType = VoxelID.WATER;
+                grid[idx] = c;
+            }
+        }
+    }
+
     void RiseFloodLogic()
     {
         var grid = world.ActiveGrid;

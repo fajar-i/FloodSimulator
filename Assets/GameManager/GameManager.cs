@@ -18,7 +18,7 @@ public class GameManager : MonoBehaviour
     public ZoneController zoneController;
     public WaterSimulationSystem waterSystem; // Logic
     // public ChunkedWaterManager disasterController;
-    // public EconomyManager economyManager;
+    public EconomyManager economyManager; // Status kota: Budget/Education/Trust/Weather
     public GameState CurrentState { get; private set; }
 
     void Start()
@@ -61,7 +61,8 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void NextPhase()
+    // Dipanggil oleh tombol "Mulai Simulasi" (HUD) maupun shortcut keyboard Enter.
+    public void NextPhase()
     {
         switch (CurrentState)
         {
@@ -98,7 +99,13 @@ public class GameManager : MonoBehaviour
         }
         if (CurrentState != GameState.Planning)
         {
-            cityGameManager.OnUpdate(); 
+            cityGameManager.OnUpdate();
+        }
+
+        // Status kota di-update tiap frame, lintas semua fase (saat ini placeholder).
+        if (economyManager != null)
+        {
+            economyManager.SystemUpdate(world);
         }
     }
 }
