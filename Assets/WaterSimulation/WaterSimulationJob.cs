@@ -99,9 +99,6 @@ public struct WaterPullJob : IJobParallelFor
                 {
                     int nIdx = nX + (size.x * y) + (size.x * size.y * nZ);
 
-                    // Jika tetangga bisa mengalir ke bawah, jangan lakukan aliran horizontal dengannya
-                    if (CanFlowDown(nIdx, y)) continue;
-
                     VoxelCell neighbor = readGrid[nIdx];
 
                     if (!neighbor.isSolid)
