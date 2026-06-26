@@ -96,4 +96,15 @@ public class EconomyManager : MonoBehaviour
         weather = newWeather;
         OnStatsChanged?.Invoke();
     }
+
+#if UNITY_EDITOR
+    // Dipanggil Unity setiap kali nilai field diubah lewat Inspector.
+    // Tanpa ini, mengubah 'weather'/'budget'/dll langsung di Inspector saat play
+    // TIDAK memicu OnStatsChanged, sehingga HUD & visual hujan tidak ter-update.
+    // (Perubahan "resmi" in-game tetap lewat method SetWeather/TrySpend/dll.)
+    void OnValidate()
+    {
+        if (Application.isPlaying) OnStatsChanged?.Invoke();
+    }
+#endif
 }

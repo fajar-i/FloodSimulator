@@ -61,7 +61,8 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void NextPhase()
+    // Dipanggil oleh tombol "Mulai Simulasi" (HUD) maupun shortcut keyboard Enter.
+    public void NextPhase()
     {
         switch (CurrentState)
         {

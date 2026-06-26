@@ -54,10 +54,10 @@ Top bar dibagi **4 bagian** (kiri → kanan):
 
 | # | Elemen | Ikon | Format | Data backing | Status kode |
 |---|--------|------|--------|--------------|-------------|
-| 1 | Anggaran (`Rp 1.428 jt`) | `gambar 4` | mata uang Rp | `EconomyManager.Budget` | ✅ data ada (`EconomyManager`), sudah dipakai `ZoneController` saat melukis (`TrySpend`). HUD belum. |
-| 2 | Berpendidikan | `gambar 5` (avatar) | **persentase 0–100%** | `EconomyManager.Education` | 🟡 variabel ada (placeholder), belum ada logika pengubah. HUD belum. |
-| 3 | Kepercayaan | `gambar 7` | **persentase 0–100%** | `EconomyManager.Trust` | 🟡 sama seperti 2. |
-| 4 | Cuaca (`Badai`) | `gambar 9` (BMKG) | label/enum | `EconomyManager.Weather` | 🟡 variabel ada; belum dikaitkan ke injeksi air `WaterSimulationSystem`. HUD belum. |
+| 1 | Anggaran (`Rp 1.428 jt`) | `gambar 4` | mata uang Rp | `EconomyManager.Budget` | ✅ data + HUD live (`HudController`, observer `OnStatsChanged`); `ZoneController.TrySpend` mengurangi & label auto-update. Teruji play mode. |
+| 2 | Berpendidikan | `gambar 5` (avatar) | **persentase 0–100%** | `EconomyManager.Education` | ✅ HUD live. 🟡 logika pengubah nilai masih placeholder (belum ada aturan game). |
+| 3 | Kepercayaan | `gambar 7` | **persentase 0–100%** | `EconomyManager.Trust` | ✅ HUD live. 🟡 logika pengubah masih placeholder. |
+| 4 | Cuaca (`Badai`) | `gambar 9` (BMKG) | label/enum | `EconomyManager.Weather` | ✅ HUD live. ✅ **terkait ke air**: `WaterSimulationSystem.UpdateRain()` menurunkan air dari atas & menggenang (Hujan=6 tetes/tick, Badai=18), naik perlahan. Visual hujan: `RainVisual` + Particle System (parented ke kamera). Diuji play mode. |
 
 > Catatan: `50/200` pada mockup adalah placeholder metrik **Berpendidikan** — diputuskan
 > diganti ke format **persen**. Avatar (`gambar 5`) menempel di bagian Berpendidikan, bukan identitas pemain.
@@ -118,9 +118,12 @@ Klik → `OverlayController.SetOverlay(mode)`. **State sudah jalan; rendering he
   garis atas + bawah, sekaligus menutup 1/3 bawah kartu.
 - ❌ Belum ada **muka kartu** (judul/efek/biaya), aksi klik, & logika kebijakan — menunggu desain.
 
-### 3e. Tombol Mulai Simulasi (`gambar 22`)
+### 3e. Tombol Mulai Simulasi (`gambar 22`) — ✅ dibangun
 
-- Memicu `GameManager.NextPhase()` (saat ini tombol `Enter`): `Planning → Construction → Simulation`.
+- Memicu `GameManager.NextPhase()` (setara tombol `Enter`): `Planning → Construction → Simulation → Harvest`.
+- Implementasi: `Assets/HUD/PhaseButton.cs` di pojok kanan-bawah HUD_Canvas (`PhaseButton_Mulai`). `NextPhase()` diubah jadi `public`.
+- **Label adaptif** mengikuti fase berikutnya: Planning→"Mulai Konstruksi", Construction→"Mulai Simulasi", Simulation→"Panen", Harvest→"Selesai".
+- Polish nanti: ganti ikon/gaya sesuai `gambar 22`, palette & font Spec Gaya.
 
 ---
 
@@ -176,9 +179,10 @@ Akses: properti read-only (`Budget`/`Education`/`Trust`/`Weather`); ubah hanya l
 ## 7b. TODO polish (ditunda)
 
 - [ ] **Diskrepansi brush vs keyboard** — tombol keyboard `1` (Rumput/`GRASS`) & `2` (Beton/`CONCRETE`) **belum ada** di brush picker (picker hanya zona 30–33 + Kursor). Sedang dibahas tim: apakah material terrain dasar masuk picker yang sama? Kalau ya, perlu ikon Rumput & Beton (belum ada di aset Figma).
-- [ ] **Penyesuaian color palette HUD** — warna tombol/panel/teks (saat ini latar tombol abu terang `#E5E5E0`, panel gelap `#14191F`, teks putih) disesuaikan dgn brand **Dewan Bengawan**. Berlaku untuk top bar & brush picker.
+- [x] **Penyesuaian color palette HUD** — ✅ panel (top/bottom bar, flyout picker, minimap) = krem `#ECE6DA` (Spec Gaya §9), tombol putih untuk kontras, teks gelap `#1F2329`. Ikon/swatch/kartu dibiarkan apa adanya. Top & bottom bar alpha 0.85 (agak tembus). Tombol picker/CTA & panel minimap pakai sudut membulat (UISprite 9-slice, `pixelsPerUnitMultiplier=2.5`).
+- [x] **Font Gabarito** — ✅ `Assets/HUD/Fonts/Gabarito-Variable.ttf` (variable, OFL, dari Google Fonts) dipakai semua label HUD. Ukuran: angka utama top bar & CTA = 28; judul minimap = 21; legenda mikro = 14 (21 kebesaran utk panel kecil).
 - [ ] Brush picker: posisi/2-baris sesuai Figma, animasi mekar, highlight brush aktif.
-- [ ] Upgrade label top bar dari `Text` legacy ke TextMeshPro.
+- [ ] **Upgrade label ke TextMeshPro** — *ditunda & direkomendasikan SKIP utk MVP*: legacy `Text` + Gabarito sudah cukup crisp; migrasi TMP butuh ganti tipe `Text`→`TMP_Text` di `HudController`/`PhaseButton` + buat TMP Font Asset dari variable font + re-wiring (churn besar menjelang DL). Aktifkan hanya bila ada masalah ketajaman teks.
 - [ ] Overlay picker (Baris 2): Risiko/Resapan/Elevasi (pola fan-out sama).
 
 ## 8. Rekomendasi urutan implementasi
