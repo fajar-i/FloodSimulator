@@ -41,13 +41,13 @@ public class WaterSimulationSystem : MonoBehaviour
         world = connectedWorld;
         if (Keyboard.current.spaceKey.isPressed)
         {
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 5; i++)
             {
 
                 NativeArray<VoxelCell> currentGrid = world.ActiveGrid;
                 // Di SystemUpdate
                 int midX = UnityEngine.Random.Range(0, world.worldWidth);
-                int midY = world.worldHeight - 5;
+                int midY = UnityEngine.Random.Range(world.worldHeight - 2, world.worldHeight);
                 int midZ = UnityEngine.Random.Range(0, world.worldDepth);
 
                 // Rumus Indexing yang Konsisten dengan Job Execute Anda:
@@ -57,7 +57,7 @@ public class WaterSimulationSystem : MonoBehaviour
                 if (idx >= 0 && idx < currentGrid.Length)
                 {
                     VoxelCell c = currentGrid[idx];
-                    c.amount = 1.0f; c.isSolid = false; c.blockType = VoxelID.WATER; // Tipe Air
+                    c.amount = 0.1f; c.isSolid = false; c.blockType = VoxelID.WATER; // Tipe Air
                     currentGrid[idx] = c;
                 }
             }

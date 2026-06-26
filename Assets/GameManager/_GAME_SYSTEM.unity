@@ -1612,8 +1612,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WaterSimulationSystem
   simulationDelay: 0.1
-  flowSpeed: 1
-  speedUpBy: 5
+  flowSpeed: 0.5
+  speedUpBy: 1
   isFlooding: 0
   targetFloodLevel: 10
   floodRiseRate: 0.05
@@ -5613,9 +5613,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bf1223d2e55732459f3374d0976b5d7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VoxelWorld
-  worldWidth: 128
-  worldHeight: 20
-  worldDepth: 128
+  worldWidth: 64
+  worldHeight: 32
+  worldDepth: 64
   waterMaterial: {fileID: 2100000, guid: bb394fd5cedd9804fbfb453d11d25dc1, type: 2}
 --- !u!4 &1636642547
 Transform:

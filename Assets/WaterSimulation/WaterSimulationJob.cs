@@ -17,6 +17,14 @@ public struct WaterPullJob : IJobParallelFor
     // Air di bawah level ini dianggap terjebak di cekungan mikro dan tidak mengalir lateral
     private const float DEPRESSION_STORAGE = 0.05f;
 
+    private bool CanFlowDown(int cellIdx, int cellY)
+    {
+        if (cellY <= 0) return false;
+        int downIdx = cellIdx - size.x;
+        VoxelCell downCell = readGrid[downIdx];
+        return !downCell.isSolid && downCell.amount < 0.99f;
+    }
+
     public void Execute(int i)
     {
         VoxelCell myState = readGrid[i];
@@ -72,70 +80,77 @@ public struct WaterPullJob : IJobParallelFor
         // 2. LOGIKA HORIZONTAL (CA-DUSRM ADAPTED)
         // ==========================================
 
-        // Tentukan faktor kekasaran SAYA (Sender Roughness) secara dinamis
-        // flowFriction = 0.0f (licin total/cepat) -> myRoughness = 1.0f
-        // flowFriction = 0.7f (kasar/tanah) -> myRoughness = 0.3f
-        float myRoughness = 1.0f - myState.flowFriction;
-
-        int4 dirX = new int4(-1, 1, 0, 0);
-        int4 dirZ = new int4(0, 0, -1, 1);
-
-        for (int d = 0; d < 4; d++)
+        if (!CanFlowDown(i, y))
         {
-            int nX = x + dirX[d];
-            int nZ = z + dirZ[d];
+            // Tentukan faktor kekasaran SAYA (Sender Roughness) secara dinamis
+            // flowFriction = 0.0f (licin total/cepat) -> myRoughness = 1.0f
+            // flowFriction = 0.7f (kasar/tanah) -> myRoughness = 0.3f
+            float myRoughness = 1.0f - myState.flowFriction;
 
-            if (nX >= 0 && nX < size.x && nZ >= 0 && nZ < size.z)
+            int4 dirX = new int4(-1, 1, 0, 0);
+            int4 dirZ = new int4(0, 0, -1, 1);
+
+            for (int d = 0; d < 4; d++)
             {
-                int nIdx = nX + (size.x * y) + (size.x * size.y * nZ);
-                VoxelCell neighbor = readGrid[nIdx];
+                int nX = x + dirX[d];
+                int nZ = z + dirZ[d];
 
-                if (!neighbor.isSolid)
+                if (nX >= 0 && nX < size.x && nZ >= 0 && nZ < size.z)
                 {
-                    // ... di dalam loop for 4 arah ...
+                    int nIdx = nX + (size.x * y) + (size.x * size.y * nZ);
 
-                    // Hitung perbedaan air
-                    float diff = currentAmount - neighbor.amount;
+                    // Jika tetangga bisa mengalir ke bawah, jangan lakukan aliran horizontal dengannya
+                    if (CanFlowDown(nIdx, y)) continue;
 
-                    if (math.abs(diff) > 0.01f)
+                    VoxelCell neighbor = readGrid[nIdx];
+
+                    if (!neighbor.isSolid)
                     {
-                        // KASUS A: OUTFLOW (Saya -> Tetangga)
-                        if (diff > 0)
+                        // ... di dalam loop for 4 arah ...
+
+                        // Hitung perbedaan air
+                        float diff = currentAmount - neighbor.amount;
+
+                        if (math.abs(diff) > 0.01f)
                         {
-                            if (currentAmount > DEPRESSION_STORAGE)
+                            // KASUS A: OUTFLOW (Saya -> Tetangga)
+                            if (diff > 0)
                             {
-                                // 1. Hitung keinginan aliran (Desired Flow)
-                                float desiredFlow = (diff * flowSpeed * myRoughness) * 0.25f;
+                                if (currentAmount > DEPRESSION_STORAGE)
+                                {
+                                    // 1. Hitung keinginan aliran (Desired Flow)
+                                    float desiredFlow = (diff * flowSpeed * myRoughness) * 0.25f;
 
-                                // 2. [FIX] Batasi aliran! 
-                                // Kita tidak boleh memberi lebih dari 1/4 air yang kita miliki per arah
-                                // atau melebihi diff/4 (agar tidak overshoot/bolak-balik)
-                                float maxFlowPossible = currentAmount * 0.25f;
+                                    // 2. [FIX] Batasi aliran! 
+                                    // Kita tidak boleh memberi lebih dari 1/4 air yang kita miliki per arah
+                                    // atau melebihi diff/4 (agar tidak overshoot/bolak-balik)
+                                    float maxFlowPossible = currentAmount * 0.25f;
 
-                                // Pilih yang paling kecil agar aman
-                                float actualFlow = math.min(desiredFlow, maxFlowPossible);
+                                    // Pilih yang paling kecil agar aman
+                                    float actualFlow = math.min(desiredFlow, maxFlowPossible);
 
-                                change -= actualFlow;
+                                    change -= actualFlow;
+                                }
                             }
-                        }
-                        // KASUS B: INFLOW (Tetangga -> Saya)
-                        else
-                        {
-                            if (neighbor.amount > DEPRESSION_STORAGE)
+                            // KASUS B: INFLOW (Tetangga -> Saya)
+                            else
                             {
-                                float neighborRoughness = 1.0f - neighbor.flowFriction;
+                                if (neighbor.amount > DEPRESSION_STORAGE)
+                                {
+                                    float neighborRoughness = 1.0f - neighbor.flowFriction;
 
-                                // 1. Hitung keinginan aliran (Note: diff negatif, jadi flow negatif)
-                                float desiredFlow = (diff * flowSpeed * neighborRoughness) * 0.25f;
+                                    // 1. Hitung keinginan aliran (Note: diff negatif, jadi flow negatif)
+                                    float desiredFlow = (diff * flowSpeed * neighborRoughness) * 0.25f;
 
-                                // 2. [FIX] Batasi aliran masuk!
-                                // Tetangga tidak bisa memberi lebih dari 1/4 air yang DIA miliki
-                                float maxInflowPossible = neighbor.amount * 0.25f;
+                                    // 2. [FIX] Batasi aliran masuk!
+                                    // Tetangga tidak bisa memberi lebih dari 1/4 air yang DIA miliki
+                                    float maxInflowPossible = neighbor.amount * 0.25f;
 
-                                // math.max karena angkanya negatif (misal: max(-2.5, -0.25) = -0.25)
-                                float actualFlow = math.max(desiredFlow, -maxInflowPossible);
+                                    // math.max karena angkanya negatif (misal: max(-2.5, -0.25) = -0.25)
+                                    float actualFlow = math.max(desiredFlow, -maxInflowPossible);
 
-                                change -= actualFlow; // Minus ketemu minus jadi plus
+                                    change -= actualFlow; // Minus ketemu minus jadi plus
+                                }
                             }
                         }
                     }
